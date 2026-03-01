@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}MyCite | Home{% endblock %}
+
+{% set page_title = "Home" %}
+{% set page_subtitle = "Portal utilities (tabs) + local operational context" %}
+
+{% block topbar %}
+  <nav class="hometabs" aria-label="Home tabs">
+    <button class="hometabs__tab is-active" data-tab="overview" type="button">Overview</button>
+    <button class="hometabs__tab" data-tab="inbox" type="button">Inbox</button>
+    <button class="hometabs__tab" data-tab="config" type="button">Config</button>
+    <button class="hometabs__tab" data-tab="data" type="button">Data</button>
+  </nav>
+{% endblock %}
+
+{% block body %}
+  <div class="panelstack">
+    <section class="panel is-active" data-panel="overview">
+      <div class="cardgrid">
+        <article class="card">
+          <div class="card__kicker">Status</div>
+          <div class="card__title">Portal shell is live</div>
+          <div class="card__body">
+            <p>This page is the <em>home portal</em>. It keeps tabs at the top.</p>
+            <p>Alias session pages will hide these tabs and display an organization session widget.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card__kicker">Next</div>
+          <div class="card__title">Wire inbox + config tools</div>
+          <div class="card__body">
+            <ul class="bullets">
+              <li><code>/portal/api/inbox?msn_id=…</code></li>
+              <li><code>/portal/api/config?msn_id=…</code></li>
+              <li><code>/portal/api/aliases?msn_id=…</code></li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card__kicker">Model</div>
+          <div class="card__title">Aliases drive context</div>
+          <div class="card__body">
+            <p>The left sidebar selects an alias.</p>
+            <p>The main region becomes “you-as-that-alias” inside an organization session.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="inbox">
+      <div class="placeholder">
+        <div class="placeholder__title">Inbox</div>
+        <div class="placeholder__text">
+          Home tool panel placeholder. Later: render request_log events from <code>/portal/api/inbox</code>.
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="config">
+      <div class="placeholder">
+        <div class="placeholder__title">Config</div>
+        <div class="placeholder__text">
+          Home tool panel placeholder. Later: config editor backed by <code>/portal/api/config</code>.
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="data">
+      <div class="placeholder">
+        <div class="placeholder__title">Data</div>
+        <div class="placeholder__text">
+          Home tool panel placeholder. Later: datasets, schemas, operational tables.
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

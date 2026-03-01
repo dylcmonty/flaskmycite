@@ -1,0 +1,29 @@
+# Python bytecode and caches
+__pycache__/
+**/__pycache__/
+*.py[cod]
+**/*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+**/.venv/
+**/venv/
+
+# Flask/runtime outputs
+.flask-multi/
+*.log
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
+
+# Local operational artifacts
+**/private/request_log/*.ndjson
+**/data/cache/contacts/*.json

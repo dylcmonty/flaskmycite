@@ -1,0 +1,24 @@
+{
+  "msn_id": "3-2-3-17-77-1-3-2-3-1",
+  "schema": "mycite.profile.v0",
+  "title": "mycite_ne_example",
+  "private_key_ref": "vault://keys/3-2-3-17-77-1-3-2-3-1",
+  "request_log": [],
+  "symmetric_key_contracts": [],
+  "aliases": [
+    {
+      "3-2-3-17-77-1-6-4-1-4": "msn-3-2-3-17-77-1-3-2-3-1-alias-3-2-3-17-77-1-6-4-1-4-poc.json"
+    }
+  ],
+  "hosted": [],
+  "progeny": [],
+  "contract_policy": {
+    "allow_counterparties": ["3-2-3-17-77-1-6-4-1-4"],
+    "auto_accept_types": ["symmetric_key"],
+    "require_manual_accept": false,
+    "default_response": "decline",
+    "counterparty_base_urls": {
+      "3-2-3-17-77-1-6-4-1-4": "http://127.0.0.1:5001"
+    }
+  }
+}

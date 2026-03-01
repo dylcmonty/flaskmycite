@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}MyCite{% endblock %}</title>
+
+  <link rel="stylesheet" href="/portal/static/portal.css" />
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <div class="portal-frame">
+
+    <!-- ==========================
+         LEFT: Alias selector column
+         Always visible
+         ========================== -->
+    <aside class="navcol">
+      <div class="navcol__brand">
+        <a class="navcol__brandLink" href="/portal">MyCite</a>
+        <div class="navcol__brandSub">
+          {% if portal_title is defined and portal_title %}{{ portal_title }}{% else %}Portal{% endif %}
+        </div>
+      </div>
+
+      <div class="navcol__section">
+        <div class="navcol__sectionTitle">Aliases</div>
+
+        <div class="navcol__search">
+          <input class="navcol__searchInput" id="aliasSearch" type="search" placeholder="Filter aliases…" autocomplete="off" />
+        </div>
+
+        <ul class="navcol__list" id="aliasList">
+          {% if aliases is defined and aliases %}
+            {% for a in aliases %}
+              {# Expected: a.alias_id, a.label, a.org_title (optional) #}
+              <li class="navcol__item">
+                <a class="navcol__link {% if active_alias_id is defined and a.alias_id == active_alias_id %}is-active{% endif %}"
+                   href="/portal/alias/{{ a.alias_id }}">
+                  <span class="navcol__linkTitle">{{ a.label }}</span>
+                  {% if a.org_title %}<span class="navcol__linkSub">{{ a.org_title }}</span>{% endif %}
+                </a>
+              </li>
+            {% endfor %}
+          {% else %}
+            <li class="navcol__item">
+              <a class="navcol__link is-empty" href="#" onclick="return false;">
+                <span class="navcol__linkTitle">No aliases loaded</span>
+                <span class="navcol__linkSub">Wire aliases into template context later</span>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <div class="navcol__spacer"></div>
+
+      <div class="navcol__footer">
+        <div class="navcol__footLine">Local UI shell</div>
+        <div class="navcol__footLine navcol__footDim">
+          {% if msn_id is defined and msn_id %}msn_id: {{ msn_id }}{% else %}msn_id: (unset){% endif %}
+        </div>
+      </div>
+    </aside>
+
+    <!-- ==========================
+         RIGHT: Main region
+         ========================== -->
+    <main class="maincol">
+
+      {% block topbar %}
+        {# Optional: home tabs appear here; alias page omits/overrides #}
+      {% endblock %}
+
+      {% block header %}
+        <div class="pagehead">
+          <div class="pagehead__title">
+            {% if page_title is defined and page_title %}{{ page_title }}{% else %}MyCite{% endif %}
+          </div>
+          {% if page_subtitle is defined and page_subtitle %}
+            <div class="pagehead__sub">{{ page_subtitle }}</div>
+          {% endif %}
+        </div>
+      {% endblock %}
+
+      <section class="viewport {% block viewport_class %}{% endblock %}">
+        {% block body %}{% endblock %}
+      </section>
+    </main>
+
+  </div>
+
+  <script src="/portal/static/portal.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

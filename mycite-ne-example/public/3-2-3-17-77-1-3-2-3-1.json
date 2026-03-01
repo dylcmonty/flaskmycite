@@ -1,0 +1,8 @@
+{
+  "msn_id": "3-2-3-17-77-1-3-2-3-1",
+  "schema": "mycite.profile.v0",
+  "title": "mycite_ne_example",
+  "public_key": "PUBLIC_KEY_PLACEHOLDER",
+  "entity_type": "natural_entity",
+  "accessible": {}
+}

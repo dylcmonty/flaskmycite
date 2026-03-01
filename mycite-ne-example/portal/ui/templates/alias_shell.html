@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}MyCite | Alias Session{% endblock %}
+
+{% set page_title = "Alias session" %}
+{% set page_subtitle = "Portal context as an alias; organization view is an external widget" %}
+
+{% block topbar %}{# intentionally empty: tabs disappear on alias pages #}{% endblock %}
+
+{% block body %}
+  <div class="aliaslayout">
+
+    <!-- Left: Alias profile summary (portal-owned representation) -->
+    <aside class="aliascard">
+      <div class="aliascard__title">
+        {% if alias_label is defined and alias_label %}{{ alias_label }}{% else %}Selected alias{% endif %}
+      </div>
+
+      <div class="aliascard__meta">
+        <div class="kv">
+          <div class="kv__k">alias_id</div>
+          <div class="kv__v">{% if active_alias_id is defined and active_alias_id %}{{ active_alias_id }}{% else %}(unset){% endif %}</div>
+        </div>
+        <div class="kv">
+          <div class="kv__k">org</div>
+          <div class="kv__v">{% if org_title is defined and org_title %}{{ org_title }}{% else %}(organization){% endif %}</div>
+        </div>
+        <div class="kv">
+          <div class="kv__k">org_msn_id</div>
+          <div class="kv__v">{% if org_msn_id is defined and org_msn_id %}{{ org_msn_id }}{% else %}(unset){% endif %}</div>
+        </div>
+      </div>
+
+      <div class="aliascard__note">
+        This left panel is the portal’s view of the alias profile. The organization’s session UI renders in the main widget.
+      </div>
+    </aside>
+
+    <!-- Right: Organization session widget -->
+    <section class="orgwidget">
+      <div class="orgwidget__frame">
+        <div class="orgwidget__title">Organization session widget</div>
+        {% if org_widget_url is defined and org_widget_url %}
+          <iframe class="orgwidget__iframe" src="{{ org_widget_url }}" title="Organization session widget"></iframe>
+        {% else %}
+          <div class="orgwidget__text">
+            Organization widget URL is not available for this alias.
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+  </div>
+{% endblock %}

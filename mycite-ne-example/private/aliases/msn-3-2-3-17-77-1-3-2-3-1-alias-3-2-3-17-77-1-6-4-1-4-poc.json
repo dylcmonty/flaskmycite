@@ -1,0 +1,13 @@
+{
+  "msn_id": "3-2-3-17-77-1-3-2-3-1",
+  "alias_host": "3-2-3-17-77-1-6-4-1-4",
+  "host_title": "mycite_le_example",
+  "given_name": "example",
+  "christian_name": "",
+  "family_name": "alias",
+  "maiden_name": "",
+  "email": "alias@example.invalid",
+  "phone_number": "000_000_0000",
+  "mailling_address": "placeholder_address",
+  "symmetric_key_contract": "contract_ref_placeholder"
+}

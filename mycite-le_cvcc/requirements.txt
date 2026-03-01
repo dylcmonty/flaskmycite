@@ -1,0 +1,14 @@
+# mycite-le - Python dependencies
+#
+# Install (local dev):
+#   pip install -r requirements.txt
+#
+# Notes:
+# - This prototype runs locally with no auth.
+# - gunicorn is included for eventual production-style serving (optional for local dev).
+
+Flask>=3.0.0
+gunicorn>=22.0.0
+
+# --- Optional (quality-of-life) ---
+python-dotenv>=1.0.1

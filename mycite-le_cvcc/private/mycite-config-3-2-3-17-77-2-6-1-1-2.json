@@ -1,0 +1,23 @@
+{
+  "msn_id": "3-2-3-17-77-2-6-1-1-2",
+  "schema": "mycite.profile.v0",
+  "title": "cuyahoga_valley_countryside_conservancy_inc",
+  "private_key": "private_key_ref",
+  "request_log": [],
+  "symmetric_key_contracts": [
+    "symmetric_key_contracts_ref_32"
+  ],
+  "aliases": [
+    {"3-2-3-17-77-1-6-4-1-4": "msn-3-2-3-17-77-2-6-1-1-2-alias-3-2-3-17-77-1-6-4-1-4-tenant.json"}
+  ],
+  "hosted": [],
+  "progeny": [
+    {"poc": "msn-3-2-3-17-77-2-6-1-1-2-progeny-3-2-3-17-77-1-3-2-3-1-poc.json"},
+    {"board_member": "msn-3-2-3-17-77-2-6-1-1-2-progeny-3-2-3-17-77-2-6-4-1-1-board_member.json"},
+    {"board_member": "msn-3-2-3-17-77-2-6-1-1-2-progeny-3-2-3-17-77-1-6-3-2-1-board_member.json"},
+    {"board_member": "msn-3-2-3-17-77-2-6-1-1-2-progeny-3-2-3-17-18-1-1-3-1-1-board_member.json"},
+    {"board_member": "msn-3-2-3-17-77-2-6-1-1-2-progeny-3-2-3-17-47-1-3-1-1-1-board_member.json"},
+    {"constituent_farm": "msn-3-2-3-17-77-2-6-1-1-2-progeny-3-2-3-17-77-2-6-4-1-3-constituent_farm.json"},
+    {"constituent_farm": "msn-3-2-3-17-77-2-6-1-1-2-progeny-3-2-3-17-77-2-6-3-1-6-constituent_farm.json"},
+  ]
+}

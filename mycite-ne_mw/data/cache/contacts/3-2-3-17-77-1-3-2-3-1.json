@@ -1,0 +1,36 @@
+{
+  "msn_id": "3-2-3-17-77-1-3-2-3-1",
+  "schema": "mycite.profile.v0",
+  "title": "marylin_wotowiec",
+  "public_key": "HERE",
+  "entity_type": "natural_entity",
+  "accessible": {},
+  "options": {
+    "self": {
+      "href": "/3-2-... .json",
+      "methods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "auth": "none"
+    },
+    "portal": {
+      "href": "/portal",
+      "methods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "auth": "required"
+    },
+    "config": {
+      "href": "/portal/api/config",
+      "methods": [
+        "GET",
+        "PUT",
+        "OPTIONS"
+      ],
+      "auth": "required"
+    }
+  },
+  "cached_unix_ms": 1772314118906
+}

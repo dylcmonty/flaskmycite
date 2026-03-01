@@ -1,0 +1,13 @@
+{
+  "msn_id": "3-2-3-17-77-1-6-4-1-3",
+  "schema": "mycite.profile.v0",
+  "title": "dylan_montgomery",
+  "private_key": "private_key_ref",
+  "request_log": [],
+  "symmetric_key_contracts": [],
+  "aliases": [
+    {"3-2-3-17-77-2-6-1-1-2": "msn-3-2-3-17-77-1-6-4-1-3-alias-3-2-3-17-77-1-6-4-1-4-poc.json"}
+  ],
+  "hosted": ["msn-3-2-3-17-77-1-6-4-1-3.json"],
+  "progeny": []
+}

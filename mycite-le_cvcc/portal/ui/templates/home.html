@@ -1,0 +1,16 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MyCite Portal</title>
+    <link rel="stylesheet" href="/portal/static/portal.css" />
+  </head>
+  <body>
+    <h1>MyCite Portal</h1>
+    <p>Tenant: <b>{{ msn_id }}</b></p>
+    <ul>
+      <li><a href="/{{ msn_id }}.json">Public profile</a></li>
+      <li><a href="/portal/api/config">Portal config API</a></li>
+    </ul>
+    <script src="/portal/static/portal.js"></script>
+  </body>
+</html>

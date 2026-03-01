@@ -1,0 +1,14 @@
+{
+    "contract_type": "magnetlink",
+    "counterparty_msn_id": "3-2-3-17-77-1-6-4-1-4",
+    "target": {
+      "kind": "tool",
+      "name": "inbox",
+      "channel": "stable"
+    },
+    "source": {
+      "kind": "endpoint",
+      "uri": "https://example.org/updates/inbox"
+    },
+    "status": "active"
+  }

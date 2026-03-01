@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Organization Widget</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #f7f6ef;
+      color: #2f2f2f;
+    }
+    .widget {
+      padding: 16px;
+    }
+    .widget__header {
+      border: 1px solid #c9c7bb;
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 12px;
+    }
+    .widget__title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .widget__meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #595959;
+    }
+    .widget__body {
+      margin-top: 12px;
+      border: 1px dashed #b8b6aa;
+      border-radius: 6px;
+      background: #fcfcf8;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <section class="widget">
+    <div class="widget__header">
+      <h1 class="widget__title">Organization Session Widget</h1>
+      <div class="widget__meta">
+        <div>org_msn_id: <code>{% if org_msn_id %}{{ org_msn_id }}{% else %}(unset){% endif %}</code></div>
+        <div>as_alias_id: <code>{% if as_alias_id %}{{ as_alias_id }}{% else %}(unset){% endif %}</code></div>
+        <div>org_title: <code>{% if org_title %}{{ org_title }}{% else %}(unset){% endif %}</code></div>
+      </div>
+    </div>
+    <div class="widget__body">
+      <div>This is the organization widget surface.</div>
+      <div>Later this will render org-defined session views.</div>
+    </div>
+  </section>
+</body>
+</html>

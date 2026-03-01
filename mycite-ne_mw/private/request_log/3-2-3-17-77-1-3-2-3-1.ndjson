@@ -1,0 +1,2 @@
+{"details":{"note":"portal-local-test"},"from_msn_id":"3-2-3-17-77-1-3-2-3-1","status":"pending","type":"request.received","ts_unix_ms":1772314118903,"msn_id":"3-2-3-17-77-1-3-2-3-1"}
+{"type":"request.received","from_msn_id":"3-2-3-17-77-1-3-2-3-1","auth":"signed","status":"pending","details":{"summary":"external request accepted","payload_keys":["message"],"payload_size_bytes":45,"key_id":null},"ts_unix_ms":1772314118906,"msn_id":"3-2-3-17-77-1-3-2-3-1"}

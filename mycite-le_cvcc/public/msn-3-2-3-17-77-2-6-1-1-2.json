@@ -2,12 +2,34 @@
   "msn_id": "3-2-3-17-77-2-6-1-1-2",
   "schema": "mycite.profile.v0",
   "title": "cuyahoga_valley_countryside_conservancy_inc",
-  "public_key": "HERE",
+  "public_key": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAs2iuO4iIy9fQryoDfcWTrjeZBK5MYpl7Q6aqsVLkjqU=\n-----END PUBLIC KEY-----\n",
   "entity_type": "legal_entity",
   "accessible": {},
   "options": {
-  "self":   {"href": "/3-2-... .json", "methods": ["GET","OPTIONS"], "auth": "none"},
-  "portal": {"href": "/portal",        "methods": ["GET","OPTIONS"], "auth": "required"},
-  "config": {"href": "/portal/api/config", "methods": ["GET","PUT","OPTIONS"], "auth": "required"}
-}
+    "self": {
+      "href": "/3-2-... .json",
+      "methods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "auth": "none"
+    },
+    "portal": {
+      "href": "/portal",
+      "methods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "auth": "required"
+    },
+    "config": {
+      "href": "/portal/api/config",
+      "methods": [
+        "GET",
+        "PUT",
+        "OPTIONS"
+      ],
+      "auth": "required"
+    }
+  }
 }

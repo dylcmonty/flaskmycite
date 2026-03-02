@@ -1,0 +1,9 @@
+{
+  "progeny_type": "tenant",
+  "title": "Tenant Profile",
+  "fields": [
+    "tenant_name",
+    "contact_email",
+    "contact_phone"
+  ]
+}

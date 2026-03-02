@@ -30,6 +30,65 @@ body{
   line-height: 1.45;
 }
 
+
+/* Theme standard tokens (cross-portal) */
+body.theme-paper{
+  --paper: #f0eedc;
+  --paper2:#e8e5d0;
+  --ink:   #464646;
+  --ink2:  #888888;
+  --coal:  #2f2f2f;
+  --coal2: #3a3a3a;
+  --line:  #afafaa;
+  --accent:#1e6c93;
+  --accent2:#5a9bb5;
+}
+body.theme-ocean{
+  --paper: #e7f3f7;
+  --paper2:#d9ebf1;
+  --ink:   #1e3b45;
+  --ink2:  #4f6f7a;
+  --coal:  #17343e;
+  --coal2: #1f4753;
+  --line:  #8fb5c3;
+  --accent:#0b7ea5;
+  --accent2:#4aa7c7;
+}
+body.theme-forest{
+  --paper: #e9f0e6;
+  --paper2:#dce8d6;
+  --ink:   #2b3b2c;
+  --ink2:  #5c715c;
+  --coal:  #213126;
+  --coal2: #2a3f2f;
+  --line:  #9fb09f;
+  --accent:#2d7a4c;
+  --accent2:#57a16f;
+}
+body.theme-midnight{
+  --paper: #202733;
+  --paper2:#283141;
+  --ink:   #dbe5f5;
+  --ink2:  #93a6c3;
+  --coal:  #121722;
+  --coal2: #1a2231;
+  --line:  #41506c;
+  --accent:#79a6ff;
+  --accent2:#9cc0ff;
+}
+body.theme-midnight .card,
+body.theme-midnight .aliascard,
+body.theme-midnight .orgwidget__frame,
+body.theme-midnight .placeholder{
+  background: #2b3446;
+  color: #dbe5f5;
+}
+body.theme-midnight .pagehead__sub,
+body.theme-midnight .placeholder__text,
+body.theme-midnight .card__body,
+body.theme-midnight .aliascard__note,
+body.theme-midnight .orgwidget__text{ color: #b7c6df; }
+
 /* Frame */
 .portal-frame{
   min-height:100vh;
@@ -172,6 +231,36 @@ body{
 .hometabs__tab.is-active{
   color: var(--accent);
   border-bottom-color: var(--accent);
+}
+
+.hometabs__spacer{ flex:1; }
+
+.themebar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding: 0 10px 8px 0;
+}
+.themebar__label{
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+.themebar__select{
+  min-width: 120px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 8px;
+  font-size: 12px;
+}
+body.theme-midnight .themebar__select{
+  background: #1f2737;
+  color: #dbe5f5;
 }
 
 /* Page header */

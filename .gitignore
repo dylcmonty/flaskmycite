@@ -27,3 +27,4 @@ venv/
 # Local operational artifacts
 **/private/request_log/*.ndjson
 **/data/cache/contacts/*.json
+**/vault/keys/*_private.pem

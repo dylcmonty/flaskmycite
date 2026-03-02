@@ -12,6 +12,7 @@ from portal.api.config import register_config_routes
 from portal.api.contracts import register_contract_routes
 from portal.api.inbox import register_inbox_routes
 from portal.api.magnetlinks import register_magnetlinks_routes
+from portal.api.progeny_config import register_progeny_config_routes
 from portal.api.public_inbox import register_public_inbox_routes
 from portal.services.policy import is_external_signed_path, is_portal_path, is_public_path
 
@@ -99,6 +100,11 @@ def _options_private(msn_id: str) -> Dict[str, Any]:
         "magnetlinks": {
             "href": f"/portal/api/magnetlinks?msn_id={msn_id}",
             "methods": ["GET", "POST", "OPTIONS"],
+            "auth": "keycloak_or_local",
+        },
+        "progeny_config": {
+            "href": f"/portal/api/progeny_config/tenant?msn_id={msn_id}",
+            "methods": ["GET", "OPTIONS"],
             "auth": "keycloak_or_local",
         },
     }
@@ -259,6 +265,7 @@ register_aliases_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_option
 register_inbox_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_options_private)
 register_contract_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_options_private)
 register_magnetlinks_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_options_private)
+register_progeny_config_routes(app, options_private_fn=_options_private)
 register_public_inbox_routes(app, private_dir=PRIVATE_DIR, public_dir=PUBLIC_DIR, data_dir=DATA_DIR)
 
 

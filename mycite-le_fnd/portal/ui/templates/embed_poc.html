@@ -5,18 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Organization Widget</title>
   <style>
+    :root {
+      --paper: #f7f6ef;
+      --ink: #2f2f2f;
+      --line: #c9c7bb;
+      --subtle: #595959;
+      --panel: #ffffff;
+      --panel-soft: #fcfcf8;
+      --notice: #6a5d4d;
+    }
+    body.theme-paper {
+      --paper: #f7f6ef;
+      --ink: #2f2f2f;
+      --line: #c9c7bb;
+      --subtle: #595959;
+      --panel: #ffffff;
+      --panel-soft: #fcfcf8;
+      --notice: #6a5d4d;
+    }
+    body.theme-ocean {
+      --paper: #e7f3f7;
+      --ink: #1e3b45;
+      --line: #8fb5c3;
+      --subtle: #45666f;
+      --panel: #f7fcfe;
+      --panel-soft: #ecf7fb;
+      --notice: #3b6675;
+    }
+    body.theme-forest {
+      --paper: #e9f0e6;
+      --ink: #2b3b2c;
+      --line: #9fb09f;
+      --subtle: #516451;
+      --panel: #f8fbf6;
+      --panel-soft: #eef5ea;
+      --notice: #48604a;
+    }
+    body.theme-midnight {
+      --paper: #1f2734;
+      --ink: #dbe5f5;
+      --line: #4a5a74;
+      --subtle: #b2c0d8;
+      --panel: #2a3445;
+      --panel-soft: #222c3c;
+      --notice: #a9bcdd;
+    }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: #f7f6ef;
-      color: #2f2f2f;
+      background: var(--paper);
+      color: var(--ink);
     }
-    .widget {
-      padding: 16px;
-    }
+    .widget { padding: 16px; }
     .widget__header {
-      border: 1px solid #c9c7bb;
-      background: #ffffff;
+      border: 1px solid var(--line);
+      background: var(--panel);
       border-radius: 6px;
       padding: 12px;
     }
@@ -30,13 +73,13 @@
     .widget__meta {
       margin-top: 8px;
       font-size: 12px;
-      color: #595959;
+      color: var(--subtle);
     }
     .widget__body {
       margin-top: 12px;
-      border: 1px dashed #b8b6aa;
+      border: 1px dashed var(--line);
       border-radius: 6px;
-      background: #fcfcf8;
+      background: var(--panel-soft);
       padding: 12px;
       font-size: 13px;
       line-height: 1.5;
@@ -45,9 +88,14 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size: 12px;
     }
+    .widget__notice {
+      margin-top: 10px;
+      color: var(--notice);
+      font-size: 12px;
+    }
   </style>
 </head>
-<body>
+<body class="theme-paper">
   <section class="widget">
     <div class="widget__header">
       <h1 class="widget__title">Organization Session Widget</h1>
@@ -55,12 +103,25 @@
         <div>org_msn_id: <code>{% if org_msn_id %}{{ org_msn_id }}{% else %}(unset){% endif %}</code></div>
         <div>as_alias_id: <code>{% if as_alias_id %}{{ as_alias_id }}{% else %}(unset){% endif %}</code></div>
         <div>org_title: <code>{% if org_title %}{{ org_title }}{% else %}(unset){% endif %}</code></div>
+        <div>theme: <code id="themeToken">paper</code></div>
       </div>
     </div>
     <div class="widget__body">
       <div>This is the organization widget surface.</div>
       <div>Later this will render org-defined session views.</div>
+      <div class="widget__notice">Theme is driven by <code>?theme=...</code> from alias session.</div>
     </div>
   </section>
+  <script>
+    (function () {
+      var allowed = ["paper", "ocean", "forest", "midnight"];
+      var params = new URLSearchParams(window.location.search);
+      var raw = String(params.get("theme") || "paper").toLowerCase();
+      var safe = allowed.indexOf(raw) >= 0 ? raw : "paper";
+      document.body.className = "theme-" + safe;
+      var token = document.getElementById("themeToken");
+      if (token) token.textContent = safe;
+    })();
+  </script>
 </body>
 </html>

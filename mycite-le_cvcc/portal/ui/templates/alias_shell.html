@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}MyCite | Alias Session{% endblock %}
+
+{% set page_title = "Alias session" %}
+{% set page_subtitle = "Session view is full-window; profile details are in the profile tab" %}
+
+{% block topbar %}
+  <nav class="hometabs" aria-label="Alias tabs">
+    <button class="hometabs__tab is-active" data-tab="session" type="button">Session</button>
+    <button class="hometabs__tab" data-tab="profile" type="button">Profile</button>
+    <div class="hometabs__spacer"></div>
+    <label class="themebar" aria-label="Theme selector">
+      <span class="themebar__label">Theme</span>
+      <select
+        class="themebar__select"
+        data-theme-selector
+        data-theme-scope="portal"
+        data-org-msn-id="{% if org_msn_id is defined and org_msn_id %}{{ org_msn_id }}{% endif %}"
+      ></select>
+    </label>
+  </nav>
+{% endblock %}
+
+{% block body %}
+  <div class="panelstack">
+    <section class="panel is-active" data-panel="session">
+      <section class="orgwidget">
+        <div class="orgwidget__frame" style="min-height: 72vh;">
+          <div class="orgwidget__title">Organization session widget</div>
+          {% if org_widget_url is defined and org_widget_url %}
+            <iframe
+              class="orgwidget__iframe"
+              style="min-height: 68vh;"
+              src="{{ org_widget_url }}"
+              title="Organization session widget"
+              data-themed-iframe="1"
+              data-org-msn-id="{% if org_msn_id is defined and org_msn_id %}{{ org_msn_id }}{% endif %}"
+            ></iframe>
+          {% else %}
+            <div class="orgwidget__text">
+              Organization widget URL is not available for this alias.
+            </div>
+          {% endif %}
+        </div>
+      </section>
+    </section>
+
+    <section class="panel" data-panel="profile">
+      <aside class="aliascard">
+        <div class="aliascard__title">
+          {% if alias_label is defined and alias_label %}{{ alias_label }}{% else %}Selected alias{% endif %}
+        </div>
+
+        <div class="aliascard__meta">
+          <div class="kv">
+            <div class="kv__k">alias_id</div>
+            <div class="kv__v">{% if active_alias_id is defined and active_alias_id %}{{ active_alias_id }}{% else %}(unset){% endif %}</div>
+          </div>
+          <div class="kv">
+            <div class="kv__k">org</div>
+            <div class="kv__v">{% if org_title is defined and org_title %}{{ org_title }}{% else %}(organization){% endif %}</div>
+          </div>
+          <div class="kv">
+            <div class="kv__k">org_msn_id</div>
+            <div class="kv__v">{% if org_msn_id is defined and org_msn_id %}{{ org_msn_id }}{% else %}(unset){% endif %}</div>
+          </div>
+          <div class="kv">
+            <div class="kv__k">theme</div>
+            <div class="kv__v"><span data-current-theme>paper</span></div>
+          </div>
+          {% if alias_progeny_type is defined and alias_progeny_type %}
+          <div class="kv">
+            <div class="kv__k">progeny_type</div>
+            <div class="kv__v">{{ alias_progeny_type }}</div>
+          </div>
+          {% endif %}
+          {% if alias_progeny_type is defined and alias_progeny_type == "tenant" and alias_tenant_id is defined and alias_tenant_id %}
+          <div class="kv">
+            <div class="kv__k">tenant_id</div>
+            <div class="kv__v">{{ alias_tenant_id }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="aliascard__note">
+          The profile tab shows portal-owned alias metadata for this session context.
+        </div>
+      </aside>
+    </section>
+  </div>
+{% endblock %}

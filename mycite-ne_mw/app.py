@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
@@ -7,7 +8,7 @@ from urllib.parse import urlencode
 from flask import Flask, abort, jsonify, make_response, render_template, request
 from jinja2 import TemplateNotFound
 
-from portal.api.aliases import register_aliases_routes
+from portal.api.aliases import get_alias_record, list_alias_records, register_aliases_routes
 from portal.api.config import register_config_routes
 from portal.api.contracts import register_contract_routes
 from portal.api.inbox import register_inbox_routes
@@ -121,44 +122,59 @@ def _alias_label(alias_payload: Dict[str, Any], alias_id: Optional[str] = None) 
 
 
 def list_aliases_ne(private_dir: Path) -> list[Dict[str, Any]]:
-    aliases_dir = private_dir / "aliases"
-    if not aliases_dir.exists() or not aliases_dir.is_dir():
-        return []
-
+    records, _ = list_alias_records(private_dir)
     aliases: list[Dict[str, Any]] = []
-    for alias_path in sorted(aliases_dir.glob("*.json")):
-        if not alias_path.is_file():
+    for record in records:
+        alias_id = str(record.get("alias_id") or "").strip()
+        if not alias_id:
             continue
-        try:
-            alias_payload = _read_json(alias_path)
-        except Exception:
-            continue
-
         aliases.append(
-                {
-                    "alias_id": alias_path.stem,
-                    "label": _alias_label(alias_payload, alias_path.stem),
-                    "org_title": str(alias_payload.get("host_title") or "").strip(),
-                    "org_msn_id": str(alias_payload.get("alias_host") or "").strip(),
-                }
+            {
+                "alias_id": alias_id,
+                "label": _alias_label(record, alias_id),
+                "org_title": str(record.get("host_title") or "").strip(),
+                "org_msn_id": str(record.get("alias_host") or "").strip(),
+                "progeny_type": str(record.get("progeny_type") or "").strip(),
+                "tenant_id": str(record.get("child_msn_id") or record.get("tenant_id") or "").strip(),
+            }
         )
     return aliases
 
 
 def load_alias_ne(private_dir: Path, alias_id: str) -> Dict[str, Any]:
-    normalized_alias_id = (alias_id or "").strip()
-    if (
-        not normalized_alias_id
-        or "/" in normalized_alias_id
-        or "\\" in normalized_alias_id
-        or ".." in normalized_alias_id
-    ):
-        raise ValueError("alias_id must be a stable identifier, not a path")
+    return get_alias_record(private_dir, alias_id)
 
-    alias_path = private_dir / "aliases" / f"{normalized_alias_id}.json"
-    if not alias_path.exists() or not alias_path.is_file():
-        raise FileNotFoundError(f"No alias record found for alias_id={normalized_alias_id}")
-    return _read_json(alias_path)
+
+def _sanitize_env_suffix(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "_", value).upper()
+
+
+def _resolve_embed_port(alias_host: str) -> str:
+    host = (alias_host or "").strip()
+    if host:
+        per_host_key = f"EMBED_HOST_PORT_{_sanitize_env_suffix(host)}"
+        if os.environ.get(per_host_key):
+            return str(os.environ.get(per_host_key)).strip()
+
+    if os.environ.get("EMBED_HOST_PORT"):
+        return str(os.environ.get("EMBED_HOST_PORT")).strip()
+    return "5001"
+
+
+def _build_org_widget_url(alias_id: str, alias_payload: Dict[str, Any]) -> str:
+    org_msn_id = str(alias_payload.get("alias_host") or "").strip()
+    org_title = str(alias_payload.get("host_title") or "").strip()
+    embed_port = _resolve_embed_port(org_msn_id)
+    base_url = f"http://127.0.0.1:{embed_port}"
+
+    progeny_type = str(alias_payload.get("progeny_type") or "").strip().lower()
+    tenant_id = str(alias_payload.get("child_msn_id") or alias_payload.get("tenant_id") or "").strip()
+    if progeny_type == "tenant" and tenant_id:
+        query = urlencode({"alias_id": alias_id, "tenant_id": tenant_id, "org_msn_id": org_msn_id})
+        return f"{base_url}/portal/embed/tenant?{query}"
+
+    query = urlencode({"org_msn_id": org_msn_id, "as_alias_id": alias_id, "org_title": org_title})
+    return f"{base_url}/portal/embed/poc?{query}"
 
 
 def _sanitize_public_profile(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -236,11 +252,8 @@ def portal_alias_session(alias_id: str):
 
     org_msn_id = str(alias_payload.get("alias_host") or "").strip()
     org_title = str(alias_payload.get("host_title") or "").strip()
-    widget_base_url = os.environ.get("ORG_WIDGET_BASE_URL", "http://127.0.0.1:5001/portal/embed/poc")
-    org_widget_url = (
-        f"{widget_base_url}?"
-        f"{urlencode({'org_msn_id': org_msn_id, 'as_alias_id': alias_id, 'org_title': org_title})}"
-    )
+    progeny_type = str(alias_payload.get("progeny_type") or "").strip().lower()
+    tenant_id = str(alias_payload.get("child_msn_id") or alias_payload.get("tenant_id") or "").strip()
 
     return render_template(
         "alias_shell.html",
@@ -249,8 +262,10 @@ def portal_alias_session(alias_id: str):
         alias_label=_alias_label(alias_payload, alias_id),
         org_title=org_title,
         org_msn_id=org_msn_id,
-        org_widget_url=org_widget_url,
+        org_widget_url=_build_org_widget_url(alias_id, alias_payload),
         msn_id=str(alias_payload.get("msn_id") or "").strip(),
+        alias_progeny_type=progeny_type,
+        alias_tenant_id=tenant_id,
     )
 
 

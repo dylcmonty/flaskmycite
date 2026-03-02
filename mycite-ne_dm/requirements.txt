@@ -1,0 +1,26 @@
+# mycite - Python dependencies
+#
+# Install (local dev):
+#   pip install -r requirements.txt
+#
+# Notes:
+# - This prototype runs locally with no auth (AUTH_MODE=none).
+# - Later, you can protect /portal/** at NGINX (recommended) OR verify Keycloak JWTs in-app.
+# - Optional auth/JWT deps are listed but commented out.
+# - gunicorn is included for eventual production-style serving (optional for local dev).
+
+Flask>=3.0.0
+gunicorn>=22.0.0
+
+# --- Optional (quality-of-life) ---
+python-dotenv>=1.0.1
+
+# --- Optional (if you choose in-app Keycloak/OIDC JWT verification) ---
+# requests>=2.32.0
+# PyJWT>=2.9.0
+# cryptography>=43.0.0
+# python-jose>=3.3.0
+
+# --- Optional (if you add persistence beyond JSON files) ---
+# SQLAlchemy>=2.0.0
+# alembic>=1.13.0

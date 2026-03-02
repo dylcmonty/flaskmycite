@@ -2,12 +2,34 @@
   "msn_id": "3-2-3-17-77-2-6-4-1-1",
   "schema": "mycite.profile.v0",
   "title": "daniel_greenfield",
-  "public_key": "HERE",
+  "public_key": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAVM8+aJx1pp8aVitHWKU7RYedOpdPHrgxtRfWB2rdbr0=\n-----END PUBLIC KEY-----\n",
   "entity_type": "natural_entity",
   "accessible": {},
   "options": {
-    "self":   {"href": "/3-2-... .json", "methods": ["GET","OPTIONS"], "auth": "none"},
-    "portal": {"href": "/portal",        "methods": ["GET","OPTIONS"], "auth": "required"},
-    "config": {"href": "/portal/api/config", "methods": ["GET","PUT","OPTIONS"], "auth": "required"}
+    "self": {
+      "href": "/3-2-... .json",
+      "methods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "auth": "none"
+    },
+    "portal": {
+      "href": "/portal",
+      "methods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "auth": "required"
+    },
+    "config": {
+      "href": "/portal/api/config",
+      "methods": [
+        "GET",
+        "PUT",
+        "OPTIONS"
+      ],
+      "auth": "required"
+    }
   }
 }

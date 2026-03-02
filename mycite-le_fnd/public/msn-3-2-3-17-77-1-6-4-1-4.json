@@ -2,14 +2,36 @@
   "msn_id": "3-2-3-17-77-1-6-4-1-4",
   "schema": "mycite.profile.v0",
   "title": "fruitful_network_development_llc",
-  "public_key": "HERE",
+  "public_key": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAfvVX8D/CuEA5OFBVelO3kjWPG81FZoi9AhUYKb5msYk=\n-----END PUBLIC KEY-----\n",
   "entity_type": "legal_entity",
   "accessible": {
     "msn_index": "msn-3-2-3-17-77-1-6-4-1-4-lcl-7-0-1"
   },
   "options": {
-  "self":   {"href": "/3-2-... .json", "methods": ["GET","OPTIONS"], "auth": "none"},
-  "portal": {"href": "/portal",        "methods": ["GET","OPTIONS"], "auth": "required"},
-  "config": {"href": "/portal/api/config", "methods": ["GET","PUT","OPTIONS"], "auth": "required"}
-}
+    "self": {
+      "href": "/3-2-... .json",
+      "methods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "auth": "none"
+    },
+    "portal": {
+      "href": "/portal",
+      "methods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "auth": "required"
+    },
+    "config": {
+      "href": "/portal/api/config",
+      "methods": [
+        "GET",
+        "PUT",
+        "OPTIONS"
+      ],
+      "auth": "required"
+    }
+  }
 }

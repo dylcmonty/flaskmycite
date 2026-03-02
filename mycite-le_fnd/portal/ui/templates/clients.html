@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}MyCite | Clients{% endblock %}
+
+{% set page_title = "Client Aliases" %}
+{% set page_subtitle = "Tenant/client progeny aliases managed by company portal" %}
+
+{% block body %}
+  <div class="panelstack">
+    <section class="panel is-active">
+      <div class="placeholder">
+        <div class="placeholder__title">Client alias registry</div>
+        <div class="placeholder__text">Aliases with progeny context are listed below.</div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        {% if client_aliases %}
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Alias ID</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Client MSN</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Progeny</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Status</th>
+                <th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in client_aliases %}
+                <tr>
+                  <td style="padding:8px; border-bottom:1px solid #f0f0f0;"><code>{{ item.alias_id }}</code></td>
+                  <td style="padding:8px; border-bottom:1px solid #f0f0f0;"><code>{{ item.client_msn_id }}</code></td>
+                  <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ item.progeny_type }}</td>
+                  <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ item.status }}</td>
+                  <td style="padding:8px; border-bottom:1px solid #f0f0f0;"><a href="/portal/client/{{ item.alias_id }}">Edit</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="placeholder__text">No client aliases found.</div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+{% endblock %}

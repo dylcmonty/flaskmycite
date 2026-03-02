@@ -2,13 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from flask import abort, jsonify, make_response, request
-
-
-def _config_path(private_dir: Path, msn_id: str) -> Path:
-    return private_dir / f"mycite-config-{msn_id}.json"
 
 
 def _aliases_dir(private_dir: Path) -> Path:
@@ -16,18 +12,57 @@ def _aliases_dir(private_dir: Path) -> Path:
 
 
 def _read_json(path: Path) -> Dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Expected object JSON in {path}")
+    return payload
 
 
-def _resolve_alias_path(private_dir: Path, alias_filename: str) -> Optional[Path]:
-    candidates = [
-        _aliases_dir(private_dir) / alias_filename,
-        private_dir / alias_filename,  # fallback
-    ]
-    for p in candidates:
-        if p.exists() and p.is_file():
-            return p
-    return None
+def _safe_alias_id(alias_id: str) -> str:
+    normalized = (alias_id or "").strip()
+    if (
+        not normalized
+        or "/" in normalized
+        or "\\" in normalized
+        or ".." in normalized
+    ):
+        raise ValueError("alias_id must be a stable identifier, not a path")
+    return normalized
+
+
+def list_alias_records(private_dir: Path) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
+    aliases_path = _aliases_dir(private_dir)
+    if not aliases_path.exists() or not aliases_path.is_dir():
+        return [], {}
+
+    items: List[Dict[str, Any]] = []
+    errors: Dict[str, str] = {}
+
+    for alias_path in sorted(aliases_path.glob("*.json")):
+        alias_id = alias_path.stem
+        try:
+            payload = _read_json(alias_path)
+        except Exception as e:
+            errors[alias_id] = f"Failed to read alias JSON: {e}"
+            continue
+
+        record = dict(payload)
+        record.setdefault("alias_id", alias_id)
+        items.append(record)
+
+    return items, errors
+
+
+def get_alias_record(private_dir: Path, alias_id: str) -> Dict[str, Any]:
+    safe_alias_id = _safe_alias_id(alias_id)
+    alias_path = _aliases_dir(private_dir) / f"{safe_alias_id}.json"
+    if not alias_path.exists() or not alias_path.is_file():
+        raise FileNotFoundError(f"No alias record found for alias_id={safe_alias_id}")
+
+    payload = _read_json(alias_path)
+    record = dict(payload)
+    record.setdefault("alias_id", safe_alias_id)
+    return record
 
 
 def register_aliases_routes(
@@ -36,52 +71,28 @@ def register_aliases_routes(
     private_dir: Path,
     options_private_fn: Optional[Callable[[str], Dict[str, Any]]] = None,
 ):
-    """Register portal-only aliases endpoints.
-
-    Aliases are listed in:
-      private/mycite-config-<msn_id>.json -> "aliases": [{<counterparty_msn_id>: <alias_filename>}, ...]
-
-    Alias files live in:
-      private/aliases/<alias_filename>
-
-    Endpoints:
-    - GET     /portal/api/aliases?msn_id=...
-    - OPTIONS /portal/api/aliases
-    """
-
     @app.get("/portal/api/aliases")
     def portal_aliases_get():
         msn_id = (request.args.get("msn_id") or "").strip()
         if not msn_id:
             abort(400, description="Missing required query param: msn_id")
 
-        cfg_p = _config_path(private_dir, msn_id)
-        if not cfg_p.exists():
-            abort(404, description=f"No config JSON found for msn_id={msn_id}")
+        records, errors = list_alias_records(private_dir)
+        aliases: Dict[str, Any] = {}
 
-        cfg = _read_json(cfg_p)
-        aliases = cfg.get("aliases", [])
-
-        resolved: Dict[str, Any] = {}
-        errors: Dict[str, str] = {}
-
-        for entry in aliases:
-            if not isinstance(entry, dict):
+        for record in records:
+            alias_id = str(record.get("alias_id") or "").strip()
+            if not alias_id:
                 continue
-            for counterpart_msn_id, alias_filename in entry.items():
-                alias_path = _resolve_alias_path(private_dir, alias_filename)
-                if not alias_path:
-                    errors[counterpart_msn_id] = f"Missing alias file: {alias_filename}"
-                    continue
-                try:
-                    resolved[counterpart_msn_id] = _read_json(alias_path)
-                except Exception as e:
-                    errors[counterpart_msn_id] = f"Failed to read alias file {alias_filename}: {e}"
+            alias_msn_id = str(record.get("msn_id") or "").strip()
+            if alias_msn_id and alias_msn_id != msn_id:
+                continue
+            aliases[alias_id] = record
 
         out: Dict[str, Any] = {
             "msn_id": msn_id,
             "schema": "mycite.alias.bundle.v0",
-            "aliases": resolved,
+            "aliases": aliases,
             "errors": errors,
         }
         if options_private_fn is not None:

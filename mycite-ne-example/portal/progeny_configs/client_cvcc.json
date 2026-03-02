@@ -1,0 +1,8 @@
+{
+  "progeny_type": "client_cvcc",
+  "title": "CVCC Client Overlay",
+  "fields": [
+    "program_code",
+    "member_reference"
+  ]
+}

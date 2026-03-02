@@ -2,7 +2,7 @@
   "msn_id": "3-2-3-17-77-1-6-4-1-4",
   "schema": "mycite.profile.v0",
   "title": "mycite_le_example",
-  "public_key": "PUBLIC_KEY_PLACEHOLDER",
+  "public_key": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAeuoZTkQJjIBr4lPUu/j6kCxUlX0wVl4+kZAAMnIkbMI=\n-----END PUBLIC KEY-----\n",
   "entity_type": "legal_entity",
   "accessible": {
     "msn_index": "msn-3-2-3-17-77-1-6-4-1-4-index-placeholder"

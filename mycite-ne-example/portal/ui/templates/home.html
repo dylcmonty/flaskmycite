@@ -11,6 +11,11 @@
     <button class="hometabs__tab" data-tab="inbox" type="button">Inbox</button>
     <button class="hometabs__tab" data-tab="config" type="button">Config</button>
     <button class="hometabs__tab" data-tab="data" type="button">Data</button>
+    <div class="hometabs__spacer"></div>
+    <label class="themebar" aria-label="Portal theme selector">
+      <span class="themebar__label">Theme</span>
+      <select class="themebar__select" data-theme-selector data-theme-scope="portal"></select>
+    </label>
   </nav>
 {% endblock %}
 
@@ -23,7 +28,7 @@
           <div class="card__title">Portal shell is live</div>
           <div class="card__body">
             <p>This page is the <em>home portal</em>. It keeps tabs at the top.</p>
-            <p>Alias session pages will hide these tabs and display an organization session widget.</p>
+            <p>Alias session pages render in the same selected portal theme.</p>
           </div>
         </article>
 

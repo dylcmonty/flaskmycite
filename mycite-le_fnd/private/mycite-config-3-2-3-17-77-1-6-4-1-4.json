@@ -1,0 +1,31 @@
+{
+  "msn_id": "3-2-3-17-77-1-6-4-1-4",
+  "schema": "mycite.profile.v0",
+  "title": "fruitful_network_development_llc",
+  "private_key_ref": "vault://keys/3-2-3-17-77-1-6-4-1-4_private.pem",
+  "request_log": [],
+  "symmetric_key_contracts": [],
+  "aliases": [],
+  "hosted": [],
+  "service_providers": [],
+  "progeny": [],
+  "enabled_tools": [
+    "paypal_demo"
+  ],
+  "contract_policy": {
+    "allow_counterparties": [
+      "3-2-3-17-77-2-6-1-1-2",
+      "3-2-3-17-77-2-6-3-1-6"
+    ],
+    "auto_accept_types": [
+      "symmetric_key",
+      "paypal_tool"
+    ],
+    "require_manual_accept": false,
+    "default_response": "decline",
+    "counterparty_base_urls": {
+      "3-2-3-17-77-2-6-1-1-2": "http://127.0.0.1:5002",
+      "3-2-3-17-77-2-6-3-1-6": "http://127.0.0.1:5003"
+    }
+  }
+}

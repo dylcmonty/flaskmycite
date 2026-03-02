@@ -1,0 +1,8 @@
+{
+  "progeny_type": "client_tff",
+  "title": "TFF Client Overlay",
+  "fields": [
+    "project_code",
+    "account_number"
+  ]
+}

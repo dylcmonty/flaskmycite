@@ -15,6 +15,7 @@ from portal.api.inbox import register_inbox_routes
 from portal.api.magnetlinks import register_magnetlinks_routes
 from portal.api.public_inbox import register_public_inbox_routes
 from portal.services.policy import is_external_signed_path, is_portal_path, is_public_path
+from portal.tools.runtime import read_enabled_tools, register_tool_blueprints
 
 app = Flask(
     __name__,
@@ -105,22 +106,50 @@ def _options_private(msn_id: str) -> Dict[str, Any]:
     }
 
 
-def _alias_label(alias_payload: Dict[str, Any], alias_id: Optional[str] = None) -> str:
-    given_name = str(alias_payload.get("given_name") or "").strip()
-    family_name = str(alias_payload.get("family_name") or "").strip()
-    combined = " ".join(part for part in (given_name, family_name) if part).strip()
-    if combined:
-        return combined
+def _infer_local_msn_id() -> str:
+    if os.environ.get("MSN_ID"):
+        return str(os.environ.get("MSN_ID")).strip()
 
+    for cfg in sorted(PRIVATE_DIR.glob("mycite-config-*.json")):
+        try:
+            payload = _read_json(cfg)
+        except Exception:
+            continue
+        msn_id = str(payload.get("msn_id") or "").strip()
+        if msn_id:
+            return msn_id
+
+    for path in sorted(PUBLIC_DIR.glob("*.json")):
+        try:
+            payload = _read_json(path)
+        except Exception:
+            continue
+        msn_id = str(payload.get("msn_id") or "").strip()
+        if msn_id:
+            return msn_id
+
+    return ""
+
+
+MSN_ID = _infer_local_msn_id()
+TOOL_TABS = register_tool_blueprints(app, read_enabled_tools(PRIVATE_DIR, msn_id=MSN_ID or None))
+
+
+def _format_sidebar_entity_title(raw: str) -> str:
+    token = re.sub(r"[_-]+", " ", str(raw or "").strip())
+    token = re.sub(r"\s+", " ", token).strip()
+    return token.upper()
+
+
+def _alias_label(alias_payload: Dict[str, Any], alias_id: Optional[str] = None) -> str:
     host_title = str(alias_payload.get("host_title") or "").strip()
     if host_title:
-        return host_title
+        return _format_sidebar_entity_title(host_title)
 
     if alias_id:
-        return alias_id
-    return "Unnamed alias"
+        return _format_sidebar_entity_title(alias_id)
 
-
+    return "UNNAMED ALIAS"
 def list_aliases_ne(private_dir: Path) -> list[Dict[str, Any]]:
     records, _ = list_alias_records(private_dir)
     aliases: list[Dict[str, Any]] = []
@@ -161,6 +190,24 @@ def _resolve_embed_port(alias_host: str) -> str:
     return "5001"
 
 
+def _extract_tenant_msn_id(alias_payload: Dict[str, Any]) -> str:
+    return str(alias_payload.get("child_msn_id") or alias_payload.get("tenant_id") or "").strip()
+
+
+def _extract_contract_id(alias_payload: Dict[str, Any]) -> str:
+    return str(alias_payload.get("contract_id") or alias_payload.get("symmetric_key_contract") or "").strip()
+
+
+def _extract_member_msn_id(alias_payload: Dict[str, Any]) -> str:
+    return str(
+        alias_payload.get("member_msn_id")
+        or alias_payload.get("child_msn_id")
+        or alias_payload.get("tenant_id")
+        or alias_payload.get("msn_id")
+        or ""
+    ).strip()
+
+
 def _build_org_widget_url(alias_id: str, alias_payload: Dict[str, Any]) -> str:
     org_msn_id = str(alias_payload.get("alias_host") or "").strip()
     org_title = str(alias_payload.get("host_title") or "").strip()
@@ -168,10 +215,21 @@ def _build_org_widget_url(alias_id: str, alias_payload: Dict[str, Any]) -> str:
     base_url = f"http://127.0.0.1:{embed_port}"
 
     progeny_type = str(alias_payload.get("progeny_type") or "").strip().lower()
-    tenant_id = str(alias_payload.get("child_msn_id") or alias_payload.get("tenant_id") or "").strip()
+    tenant_id = _extract_tenant_msn_id(alias_payload)
     if progeny_type == "tenant" and tenant_id:
-        query = urlencode({"alias_id": alias_id, "tenant_id": tenant_id, "org_msn_id": org_msn_id})
+        query = urlencode(
+            {
+                "tenant_msn_id": tenant_id,
+                "contract_id": _extract_contract_id(alias_payload),
+                "as_alias_id": alias_id,
+            }
+        )
         return f"{base_url}/portal/embed/tenant?{query}"
+
+    member_msn_id = _extract_member_msn_id(alias_payload)
+    if progeny_type == "board_member" and member_msn_id:
+        query = urlencode({"member_msn_id": member_msn_id, "as_alias_id": alias_id, "tab": "streams"})
+        return f"{base_url}/portal/embed/board_member?{query}"
 
     query = urlencode({"org_msn_id": org_msn_id, "as_alias_id": alias_id, "org_title": org_title})
     return f"{base_url}/portal/embed/poc?{query}"
@@ -226,7 +284,7 @@ def public_contact_card_options(msn_id: str):
 def portal_home():
     aliases = list_aliases_ne(PRIVATE_DIR)
     try:
-        return render_template("home.html", aliases=aliases)
+        return render_template("home.html", aliases=aliases, tool_tabs=TOOL_TABS)
     except TemplateNotFound:
         return (
             "<h1>MyCite Portal</h1>"

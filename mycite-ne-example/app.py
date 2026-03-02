@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
@@ -7,14 +8,18 @@ from urllib.parse import urlencode
 from flask import Flask, abort, jsonify, make_response, render_template, request
 from jinja2 import TemplateNotFound
 
+from data.engine.workspace import Workspace
+from data.storage_json import JsonStorageBackend
 from portal.api.aliases import register_aliases_routes
 from portal.api.config import register_config_routes
 from portal.api.contracts import register_contract_routes
+from portal.api.data_workspace import register_data_routes
 from portal.api.inbox import register_inbox_routes
 from portal.api.magnetlinks import register_magnetlinks_routes
 from portal.api.progeny_config import register_progeny_config_routes
 from portal.api.public_inbox import register_public_inbox_routes
 from portal.services.policy import is_external_signed_path, is_portal_path, is_public_path
+from portal.tools.runtime import read_enabled_tools, register_tool_blueprints
 
 app = Flask(
     __name__,
@@ -110,22 +115,51 @@ def _options_private(msn_id: str) -> Dict[str, Any]:
     }
 
 
-def _alias_label(alias_payload: Dict[str, Any], alias_id: Optional[str] = None) -> str:
-    given_name = str(alias_payload.get("given_name") or "").strip()
-    family_name = str(alias_payload.get("family_name") or "").strip()
-    combined = " ".join(part for part in (given_name, family_name) if part).strip()
-    if combined:
-        return combined
+def _infer_local_msn_id() -> str:
+    if os.environ.get("MSN_ID"):
+        return str(os.environ.get("MSN_ID")).strip()
 
+    for cfg in sorted(PRIVATE_DIR.glob("mycite-config-*.json")):
+        try:
+            payload = _read_json(cfg)
+        except Exception:
+            continue
+        msn_id = str(payload.get("msn_id") or "").strip()
+        if msn_id:
+            return msn_id
+
+    for path in sorted(PUBLIC_DIR.glob("*.json")):
+        try:
+            payload = _read_json(path)
+        except Exception:
+            continue
+        msn_id = str(payload.get("msn_id") or "").strip()
+        if msn_id:
+            return msn_id
+
+    return ""
+
+
+MSN_ID = _infer_local_msn_id()
+TOOL_TABS = register_tool_blueprints(app, read_enabled_tools(PRIVATE_DIR, msn_id=MSN_ID or None))
+DATA_WORKSPACE = Workspace(JsonStorageBackend(DATA_DIR), config={})
+
+
+def _format_sidebar_entity_title(raw: str) -> str:
+    token = re.sub(r"[_-]+", " ", str(raw or "").strip())
+    token = re.sub(r"\s+", " ", token).strip()
+    return token.upper()
+
+
+def _alias_label(alias_payload: Dict[str, Any], alias_id: Optional[str] = None) -> str:
     host_title = str(alias_payload.get("host_title") or "").strip()
     if host_title:
-        return host_title
+        return _format_sidebar_entity_title(host_title)
 
     if alias_id:
-        return alias_id
-    return "Unnamed alias"
+        return _format_sidebar_entity_title(alias_id)
 
-
+    return "UNNAMED ALIAS"
 def list_aliases_ne(private_dir: Path) -> list[Dict[str, Any]]:
     aliases_dir = private_dir / "aliases"
     if not aliases_dir.exists() or not aliases_dir.is_dir():
@@ -165,6 +199,67 @@ def load_alias_ne(private_dir: Path, alias_id: str) -> Dict[str, Any]:
     if not alias_path.exists() or not alias_path.is_file():
         raise FileNotFoundError(f"No alias record found for alias_id={normalized_alias_id}")
     return _read_json(alias_path)
+
+
+def _sanitize_env_suffix(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "_", value).upper()
+
+
+def _resolve_embed_port(alias_host: str) -> str:
+    host = (alias_host or "").strip()
+    if host:
+        per_host_key = f"EMBED_HOST_PORT_{_sanitize_env_suffix(host)}"
+        if os.environ.get(per_host_key):
+            return str(os.environ.get(per_host_key)).strip()
+
+    if os.environ.get("EMBED_HOST_PORT"):
+        return str(os.environ.get("EMBED_HOST_PORT")).strip()
+
+    return "5001"
+
+
+def _extract_tenant_msn_id(alias_payload: Dict[str, Any]) -> str:
+    return str(alias_payload.get("child_msn_id") or alias_payload.get("tenant_id") or "").strip()
+
+
+def _extract_contract_id(alias_payload: Dict[str, Any]) -> str:
+    return str(alias_payload.get("contract_id") or alias_payload.get("symmetric_key_contract") or "").strip()
+
+
+def _extract_member_msn_id(alias_payload: Dict[str, Any]) -> str:
+    return str(
+        alias_payload.get("member_msn_id")
+        or alias_payload.get("child_msn_id")
+        or alias_payload.get("tenant_id")
+        or alias_payload.get("msn_id")
+        or ""
+    ).strip()
+
+
+def _build_widget_url(alias_id: str, alias_payload: Dict[str, Any]) -> str:
+    org_msn_id = str(alias_payload.get("alias_host") or "").strip()
+    org_title = str(alias_payload.get("host_title") or "").strip()
+    base_url = f"http://127.0.0.1:{_resolve_embed_port(org_msn_id)}"
+
+    progeny_type = str(alias_payload.get("progeny_type") or "").strip().lower()
+    tenant_msn_id = _extract_tenant_msn_id(alias_payload)
+    if progeny_type == "tenant" and tenant_msn_id:
+        query = urlencode(
+            {
+                "tenant_msn_id": tenant_msn_id,
+                "contract_id": _extract_contract_id(alias_payload),
+                "as_alias_id": alias_id,
+            }
+        )
+        return f"{base_url}/portal/embed/tenant?{query}"
+
+    member_msn_id = _extract_member_msn_id(alias_payload)
+    if progeny_type == "board_member" and member_msn_id:
+        query = urlencode({"member_msn_id": member_msn_id, "as_alias_id": alias_id, "tab": "streams"})
+        return f"{base_url}/portal/embed/board_member?{query}"
+
+    query = urlencode({"org_msn_id": org_msn_id, "as_alias_id": alias_id, "org_title": org_title})
+    return f"{base_url}/portal/embed/poc?{query}"
 
 
 def _sanitize_public_profile(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -216,7 +311,7 @@ def public_contact_card_options(msn_id: str):
 def portal_home():
     aliases = list_aliases_ne(PRIVATE_DIR)
     try:
-        return render_template("home.html", aliases=aliases)
+        return render_template("home.html", aliases=aliases, tool_tabs=TOOL_TABS)
     except TemplateNotFound:
         return (
             "<h1>MyCite Portal</h1>"
@@ -242,11 +337,9 @@ def portal_alias_session(alias_id: str):
 
     org_msn_id = str(alias_payload.get("alias_host") or "").strip()
     org_title = str(alias_payload.get("host_title") or "").strip()
-    widget_base_url = os.environ.get("ORG_WIDGET_BASE_URL", "http://127.0.0.1:5001/portal/embed/poc")
-    org_widget_url = (
-        f"{widget_base_url}?"
-        f"{urlencode({'org_msn_id': org_msn_id, 'as_alias_id': alias_id, 'org_title': org_title})}"
-    )
+    progeny_type = str(alias_payload.get("progeny_type") or "").strip().lower()
+    tenant_id = _extract_tenant_msn_id(alias_payload)
+    org_widget_url = _build_widget_url(alias_id, alias_payload)
 
     return render_template(
         "alias_shell.html",
@@ -257,6 +350,8 @@ def portal_alias_session(alias_id: str):
         org_msn_id=org_msn_id,
         org_widget_url=org_widget_url,
         msn_id=str(alias_payload.get("msn_id") or "").strip(),
+        alias_progeny_type=progeny_type,
+        alias_tenant_id=tenant_id,
     )
 
 
@@ -267,6 +362,13 @@ register_contract_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_optio
 register_magnetlinks_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_options_private)
 register_progeny_config_routes(app, options_private_fn=_options_private)
 register_public_inbox_routes(app, private_dir=PRIVATE_DIR, public_dir=PUBLIC_DIR, data_dir=DATA_DIR)
+register_data_routes(
+    app,
+    workspace=DATA_WORKSPACE,
+    aliases_provider=lambda: list_aliases_ne(PRIVATE_DIR),
+    options_private_fn=_options_private,
+    msn_id_provider=lambda: MSN_ID,
+)
 
 
 if __name__ == "__main__":

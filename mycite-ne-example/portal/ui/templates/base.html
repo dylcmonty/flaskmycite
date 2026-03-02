@@ -24,6 +24,22 @@
       </div>
 
       <div class="navcol__section">
+        <div class="navcol__sectionTitle">Portal</div>
+        <ul class="navcol__list">
+          <li class="navcol__item">
+            <a class="navcol__link {% if request.path == '/portal' %}is-active{% endif %}" href="/portal">
+              <span class="navcol__linkTitle">Home</span>
+            </a>
+          </li>
+          <li class="navcol__item">
+            <a class="navcol__link {% if request.path.startswith('/portal/data') %}is-active{% endif %}" href="/portal/data">
+              <span class="navcol__linkTitle">Data</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="navcol__section">
         <div class="navcol__sectionTitle">Aliases</div>
 
         <div class="navcol__search">
@@ -38,15 +54,13 @@
                 <a class="navcol__link {% if active_alias_id is defined and a.alias_id == active_alias_id %}is-active{% endif %}"
                    href="/portal/alias/{{ a.alias_id }}">
                   <span class="navcol__linkTitle">{{ a.label }}</span>
-                  {% if a.org_title %}<span class="navcol__linkSub">{{ a.org_title }}</span>{% endif %}
-                </a>
+                                  </a>
               </li>
             {% endfor %}
           {% else %}
             <li class="navcol__item">
               <a class="navcol__link is-empty" href="#" onclick="return false;">
                 <span class="navcol__linkTitle">No aliases loaded</span>
-                <span class="navcol__linkSub">Wire aliases into template context later</span>
               </a>
             </li>
           {% endif %}

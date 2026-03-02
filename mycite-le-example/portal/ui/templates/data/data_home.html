@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}MyCite | Data Workspace{% endblock %}
+
+{% set page_title = "Data Workspace" %}
+{% set page_subtitle = "Engine-backed table views with staged edits and commit controls" %}
+
+{% block body %}
+  <section class="card data-workspace" id="dataApp" data-default-mode="{{ default_mode }}">
+    <div class="data-workspace__controls">
+      <label>
+        <span>Mode</span>
+        <select id="dataModeSelect">
+          <option value="general" selected>general</option>
+          <option value="inspect">inspect</option>
+        </select>
+      </label>
+      <label>
+        <span>Table</span>
+        <select id="dataTableSelect"></select>
+      </label>
+      <label>
+        <span>Instance</span>
+        <select id="dataInstanceSelect"></select>
+      </label>
+      <div class="data-workspace__buttons">
+        <button type="button" id="dataRevertBtn" disabled>Revert Cell</button>
+        <button type="button" id="dataResetBtn">Reset</button>
+        <button type="button" id="dataCommitBtn">Commit</button>
+      </div>
+    </div>
+
+    <div id="dataStatus" class="data-workspace__status" aria-live="polite"></div>
+    <div id="dataMessages" class="data-workspace__messages" aria-live="polite"></div>
+
+    {% include "data/data_table.html" %}
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/portal/static/data/data.js"></script>
+{% endblock %}

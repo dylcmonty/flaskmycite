@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tenant Interface</title>
+  <style>
+    :root {
+      --paper: #f7f6ef;
+      --ink: #2f2f2f;
+      --line: #c9c7bb;
+      --panel: #ffffff;
+      --panel-soft: #fcfcf8;
+      --notice: #6a5d4d;
+      --accent: #1e6c93;
+      --danger: #9b3b3b;
+      --ok: #2f6b38;
+    }
+    body.theme-paper {
+      --paper: #f7f6ef;
+      --ink: #2f2f2f;
+      --line: #c9c7bb;
+      --panel: #ffffff;
+      --panel-soft: #fcfcf8;
+      --notice: #6a5d4d;
+      --accent: #1e6c93;
+      --danger: #9b3b3b;
+      --ok: #2f6b38;
+    }
+    body.theme-ocean {
+      --paper: #e7f3f7;
+      --ink: #1e3b45;
+      --line: #8fb5c3;
+      --panel: #f7fcfe;
+      --panel-soft: #ecf7fb;
+      --notice: #3b6675;
+      --accent: #0f7aa1;
+      --danger: #9b3b3b;
+      --ok: #2f6b38;
+    }
+    body.theme-forest {
+      --paper: #e9f0e6;
+      --ink: #2b3b2c;
+      --line: #9fb09f;
+      --panel: #f8fbf6;
+      --panel-soft: #eef5ea;
+      --notice: #48604a;
+      --accent: #2f7a4e;
+      --danger: #9b3b3b;
+      --ok: #2f6b38;
+    }
+    body.theme-midnight {
+      --paper: #1f2734;
+      --ink: #dbe5f5;
+      --line: #4a5a74;
+      --panel: #2a3445;
+      --panel-soft: #222c3c;
+      --notice: #a9bcdd;
+      --accent: #79a6ff;
+      --danger: #f2a1a1;
+      --ok: #8be09c;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .shell {
+      padding: 14px;
+    }
+    .head {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      padding: 12px;
+    }
+    .head__title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .head__meta {
+      margin-top: 8px;
+      font-size: 12px;
+      display: grid;
+      gap: 3px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .tabs a {
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: var(--ink);
+      background: var(--panel-soft);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .tabs a.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--panel);
+    }
+    .banner {
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 10px;
+      font-size: 12px;
+    }
+    .banner--warn {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .banner--ok {
+      border-color: var(--ok);
+      color: var(--ok);
+    }
+    .body {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      padding: 12px;
+    }
+  </style>
+</head>
+<body class="theme-paper">
+  {% set resolved_theme = theme if theme else 'paper' %}
+  <section class="shell">
+    <div class="head">
+      <h1 class="head__title">Tenant Interface Window</h1>
+      <div class="head__meta">
+        <div>tenant_msn_id: <code>{% if tenant_msn_id %}{{ tenant_msn_id }}{% else %}(unset){% endif %}</code></div>
+        <div>contract_id: <code>{% if contract_id %}{{ contract_id }}{% else %}(unset){% endif %}</code></div>
+        <div>as_alias_id: <code>{% if as_alias_id %}{{ as_alias_id }}{% else %}(unset){% endif %}</code></div>
+        <div>theme: <code id="themeToken">paper</code></div>
+      </div>
+
+      <nav class="tabs" aria-label="Tenant tabs">
+        <a class="{% if tab == 'payments' %}active{% endif %}" href="{{ url_for('embed_tenant', tenant_msn_id=tenant_msn_id, contract_id=contract_id, as_alias_id=as_alias_id, tab='payments', theme=resolved_theme) }}">Payment Processing</a>
+        <a class="{% if tab == 'agreement' %}active{% endif %}" href="{{ url_for('embed_tenant', tenant_msn_id=tenant_msn_id, contract_id=contract_id, as_alias_id=as_alias_id, tab='agreement', theme=resolved_theme) }}">Service Agreement</a>
+        <a class="{% if tab == 'analytics' %}active{% endif %}" href="{{ url_for('embed_tenant', tenant_msn_id=tenant_msn_id, contract_id=contract_id, as_alias_id=as_alias_id, tab='analytics', theme=resolved_theme) }}">Analytics</a>
+        <a class="{% if tab == 'blog' %}active{% endif %}" href="{{ url_for('embed_tenant', tenant_msn_id=tenant_msn_id, contract_id=contract_id, as_alias_id=as_alias_id, tab='blog', theme=resolved_theme) }}">Blog</a>
+      </nav>
+
+      {% if warning %}
+        <div class="banner banner--warn">{{ warning }}</div>
+      {% endif %}
+      {% if saved %}
+        <div class="banner banner--ok">PayPal configuration saved.</div>
+      {% endif %}
+      {% if webhook == 'registered' %}
+        <div class="banner banner--ok">Webhook registration requested and completed (stub).</div>
+      {% elif webhook == 'failed' %}
+        <div class="banner banner--warn">Webhook registration failed (stub).</div>
+      {% endif %}
+    </div>
+
+    <div class="body">
+      {% if tab == 'payments' %}
+        {% include "tenant_payments.html" %}
+      {% elif tab == 'agreement' %}
+        {% set placeholder_title = 'Service Agreement' %}
+        {% include "tenant_placeholder.html" %}
+      {% elif tab == 'analytics' %}
+        {% set placeholder_title = 'Analytics' %}
+        {% include "tenant_placeholder.html" %}
+      {% else %}
+        {% set placeholder_title = 'Blog' %}
+        {% include "tenant_placeholder.html" %}
+      {% endif %}
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      var allowed = ["paper", "ocean", "forest", "midnight"];
+      var params = new URLSearchParams(window.location.search);
+      var raw = String(params.get("theme") || "{{ resolved_theme }}").toLowerCase();
+      var safe = allowed.indexOf(raw) >= 0 ? raw : "paper";
+      document.body.className = "theme-" + safe;
+      var token = document.getElementById("themeToken");
+      if (token) token.textContent = safe;
+    })();
+  </script>
+</body>
+</html>

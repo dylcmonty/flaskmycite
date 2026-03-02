@@ -11,6 +11,11 @@
     <button class="hometabs__tab" data-tab="inbox" type="button">Inbox</button>
     <button class="hometabs__tab" data-tab="config" type="button">Config</button>
     <button class="hometabs__tab" data-tab="data" type="button">Data</button>
+    {% if tool_tabs %}
+      {% for tool in tool_tabs %}
+        <button class="hometabs__tab" data-tab="{{ tool.panel_id }}" type="button">{{ tool.title }}</button>
+      {% endfor %}
+    {% endif %}
     <div class="hometabs__spacer"></div>
     <label class="themebar" aria-label="Portal theme selector">
       <span class="themebar__label">Theme</span>
@@ -77,9 +82,32 @@
       <div class="placeholder">
         <div class="placeholder__title">Data</div>
         <div class="placeholder__text">
-          Home tool panel placeholder. Later: datasets, schemas, operational tables.
+          Open the data workspace for table discovery, inspect mode, staged edits, and commit.
+          <div style="margin-top:10px;">
+            <a href="/portal/data"><strong>Open Data Workspace</strong></a>
+          </div>
         </div>
       </div>
     </section>
+
+    {% if tool_tabs %}
+      {% for tool in tool_tabs %}
+        <section class="panel" data-panel="{{ tool.panel_id }}">
+          <div class="placeholder">
+            <div class="placeholder__title">{{ tool.title }}</div>
+            <div class="placeholder__text">
+              Tool panel surface from <code>{{ tool.home_path }}</code>.
+            </div>
+            <iframe
+              data-themed-iframe="1"
+              src="{{ tool.home_path }}"
+              title="{{ tool.title }}"
+              class="orgwidget__iframe"
+              style="min-height:520px; margin-top:12px; border:1px solid #d8d8d8; border-radius:6px; background:#fff;"
+            ></iframe>
+          </div>
+        </section>
+      {% endfor %}
+    {% endif %}
   </div>
 {% endblock %}

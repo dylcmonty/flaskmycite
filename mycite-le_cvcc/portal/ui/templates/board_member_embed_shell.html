@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CVCC Board Workspace</title>
+  <style>
+    :root {
+      --paper: #f7f6ef;
+      --ink: #2f2f2f;
+      --line: #c9c7bb;
+      --subtle: #595959;
+      --panel: #ffffff;
+      --panel-soft: #fcfcf8;
+      --accent: #1e6c93;
+      --success: #2f6f4f;
+      --warn: #8a4f2d;
+    }
+    body.theme-paper {
+      --paper: #f7f6ef;
+      --ink: #2f2f2f;
+      --line: #c9c7bb;
+      --subtle: #595959;
+      --panel: #ffffff;
+      --panel-soft: #fcfcf8;
+      --accent: #1e6c93;
+    }
+    body.theme-ocean {
+      --paper: #e7f3f7;
+      --ink: #1e3b45;
+      --line: #8fb5c3;
+      --subtle: #45666f;
+      --panel: #f7fcfe;
+      --panel-soft: #ecf7fb;
+      --accent: #0b7ea5;
+    }
+    body.theme-forest {
+      --paper: #e9f0e6;
+      --ink: #2b3b2c;
+      --line: #9fb09f;
+      --subtle: #516451;
+      --panel: #f8fbf6;
+      --panel-soft: #eef5ea;
+      --accent: #2d7a4c;
+    }
+    body.theme-midnight {
+      --paper: #1f2734;
+      --ink: #dbe5f5;
+      --line: #4a5a74;
+      --subtle: #b2c0d8;
+      --panel: #2a3445;
+      --panel-soft: #222c3c;
+      --accent: #79a6ff;
+      --success: #8fd1ad;
+      --warn: #f0c297;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .workspace {
+      padding: 12px;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .shell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .shell__header {
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+    .shell__title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .shell__meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--subtle);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+      gap: 8px;
+    }
+    .shell__tabs {
+      display: flex;
+      gap: 2px;
+      padding: 8px 10px 0;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      flex-wrap: wrap;
+    }
+    .shell__tab {
+      text-decoration: none;
+      color: var(--subtle);
+      border: 1px solid transparent;
+      border-bottom: 0;
+      border-radius: 6px 6px 0 0;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .shell__tab.is-active {
+      color: var(--accent);
+      border-color: var(--line);
+      background: var(--panel-soft);
+    }
+    .shell__content {
+      padding: 12px;
+    }
+    .banner {
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+    .banner.is-success { color: var(--success); }
+    .banner.is-warn { color: var(--warn); }
+    .embed-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--subtle);
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+    @media (max-width: 760px) {
+      .shell__meta {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="theme-paper">
+  <section class="workspace">
+    <article class="shell">
+      <header class="shell__header">
+        <h1 class="shell__title">CVCC Board Workspace</h1>
+        <div class="shell__meta">
+          <div>member_msn_id: <code>{{ member_msn_id }}</code></div>
+          <div>as_alias_id: <code>{% if as_alias_id %}{{ as_alias_id }}{% else %}(unset){% endif %}</code></div>
+          <div>theme: <code id="themeToken">paper</code></div>
+        </div>
+      </header>
+
+      <nav class="shell__tabs" aria-label="Board workspace tabs">
+        <a class="shell__tab {% if active_tab == 'streams' %}is-active{% endif %}" href="{{ url_for('portal_embed_board_member', member_msn_id=member_msn_id, as_alias_id=as_alias_id, tab='streams', theme=theme) }}">Streams</a>
+        <a class="shell__tab {% if active_tab == 'calendar' %}is-active{% endif %}" href="{{ url_for('portal_embed_board_member', member_msn_id=member_msn_id, as_alias_id=as_alias_id, tab='calendar', theme=theme) }}">Calendar</a>
+        <a class="shell__tab {% if active_tab == 'people' %}is-active{% endif %}" href="{{ url_for('portal_embed_board_member', member_msn_id=member_msn_id, as_alias_id=as_alias_id, tab='people', theme=theme) }}">People</a>
+      </nav>
+
+      <section class="shell__content">
+        {% if status_message %}
+          <div class="banner {% if status_level == 'success' %}is-success{% else %}is-warn{% endif %}">
+            {{ status_message }}
+          </div>
+        {% endif %}
+
+        {% if active_tab == "calendar" %}
+          {% include "board_member_calendar.html" %}
+        {% elif active_tab == "people" %}
+          {% include "board_member_people.html" %}
+        {% else %}
+          {% include "board_member_streams.html" %}
+        {% endif %}
+      </section>
+    </article>
+    <div class="embed-note">MVP storage model: append-only NDJSON journals with <code>author_msn_id</code> attribution.</div>
+  </section>
+
+  <script>
+    (function () {
+      var allowed = ["paper", "ocean", "forest", "midnight"];
+      var params = new URLSearchParams(window.location.search);
+      var raw = String(params.get("theme") || "{{ theme or 'paper' }}").toLowerCase();
+      var safe = allowed.indexOf(raw) >= 0 ? raw : "paper";
+      document.body.className = "theme-" + safe;
+      var token = document.getElementById("themeToken");
+      if (token) token.textContent = safe;
+    })();
+  </script>
+</body>
+</html>
+

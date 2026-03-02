@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}MyCite | Data Table{% endblock %}
+
+{% set page_title = "Data Table: " ~ table_label %}
+{% set page_subtitle = "Prototype editable grid (updates are currently a no-op stub)" %}
+
+{% block body %}
+  <div class="card" style="max-width:100%;">
+    <div class="card__kicker">Table</div>
+    <div class="card__title"><code>{{ table_name }}</code></div>
+    <div class="card__body">
+      {% if rows %}
+        <form method="post" action="/portal/data/{{ table_name }}/update">
+          <div style="overflow-x:auto;">
+            <table style="border-collapse:collapse; width:100%; min-width:640px;">
+              <thead>
+                <tr>
+                  {% for col in columns %}
+                    <th style="text-align:left; border-bottom:1px solid #d8d8d8; padding:8px; font-size:12px; text-transform:uppercase; letter-spacing:0.04em;">
+                      {{ col }}
+                      {# TODO: Add optional header icon support for semantic columns. #}
+                      {# TODO: Add ambiguous label hints/tooling per column. #}
+                    </th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in rows %}
+                  {% set row_index = loop.index0 %}
+                  <tr>
+                    {% for col in columns %}
+                      <td style="border-bottom:1px solid #efefef; padding:8px;">
+                        <input
+                          type="text"
+                          name="cell__{{ row_index }}__{{ col }}"
+                          value="{{ row.get(col, '') }}"
+                          style="width:100%; min-width:150px; padding:6px 8px; border:1px solid #c9c7bb; border-radius:6px;"
+                        />
+                      </td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top:12px;">
+            <button type="submit" style="padding:8px 14px; border:1px solid #999; border-radius:6px; background:#fff;">Submit Updates</button>
+          </div>
+        </form>
+      {% else %}
+        <div class="placeholder__text">No rows found for this table.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

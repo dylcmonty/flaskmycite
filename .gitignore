@@ -28,3 +28,9 @@ venv/
 **/private/request_log/*.ndjson
 **/data/cache/contacts/*.json
 **/vault/keys/*_private.pem
+mycite-le_fnd/private/vault/**
+mycite-le_fnd/private/request_log/*.ndjson
+mycite-le_fnd/data/cache/**
+mycite-le_cvcc/private/workspaces/board/v1/*.ndjson
+mycite-le_cvcc/private/request_log/*.ndjson
+mycite-le_cvcc/data/cache/**

@@ -1,0 +1,70 @@
+{% set webhook = paypal.get('webhook') if paypal is mapping else {} %}
+{% set webhook_target = webhook.get('target_url') if webhook is mapping else '' %}
+{% set event_mask_list = webhook.get('event_mask') if webhook is mapping else [] %}
+{% if event_mask_list is not sequence or event_mask_list is string %}
+  {% set event_mask_list = [] %}
+{% endif %}
+{% set event_mask_csv = event_mask_list | join(',') %}
+
+<div>
+  <h2 style="margin:0 0 8px; font-size:14px;">Payment Processing</h2>
+  <p style="margin:0 0 12px; font-size:12px; opacity:0.85;">
+    Configure tenant PayPal credentials. Secret values are encrypted at rest and never displayed.
+  </p>
+
+  <form method="post" action="{{ url_for('embed_tenant_paypal_save') }}" style="display:grid; gap:10px; max-width:720px;">
+    <input type="hidden" name="tenant_msn_id" value="{{ tenant_msn_id }}" />
+    <input type="hidden" name="contract_id" value="{{ contract_id }}" />
+    <input type="hidden" name="as_alias_id" value="{{ as_alias_id }}" />
+    <input type="hidden" name="theme" value="{{ theme if theme else 'paper' }}" />
+
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>PayPal Client ID</span>
+      <input type="text" name="paypal_client_id" value="{{ paypal.get('client_id', '') if paypal is mapping else '' }}" style="height:34px; border:1px solid #c9c7bb; border-radius:6px; padding:0 10px;" />
+    </label>
+
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>PayPal Client Secret</span>
+      <input type="password" name="paypal_client_secret" value="" placeholder="{% if has_encrypted_secret %}encrypted secret on file{% else %}enter secret{% endif %}" style="height:34px; border:1px solid #c9c7bb; border-radius:6px; padding:0 10px;" />
+      <small style="opacity:0.8;">Leave blank to keep existing encrypted secret.</small>
+    </label>
+
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>Webhook Target URL</span>
+      <input type="text" name="webhook_target_url" value="{{ webhook_target }}" style="height:34px; border:1px solid #c9c7bb; border-radius:6px; padding:0 10px;" />
+    </label>
+
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>Webhook Event Mask (CSV)</span>
+      <input type="text" name="webhook_event_mask" value="{{ event_mask_csv }}" style="height:34px; border:1px solid #c9c7bb; border-radius:6px; padding:0 10px;" />
+    </label>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="submit" {% if not contract_usable %}disabled{% endif %} style="height:34px; border:1px solid #1e6c93; border-radius:6px; background:#1e6c93; color:#fff; padding:0 12px; font-size:12px;">
+        Save PayPal Config
+      </button>
+    </div>
+  </form>
+
+  <form method="post" action="{{ url_for('embed_tenant_paypal_webhook_register') }}" style="margin-top:12px; display:grid; gap:8px; max-width:720px;">
+    <input type="hidden" name="tenant_msn_id" value="{{ tenant_msn_id }}" />
+    <input type="hidden" name="contract_id" value="{{ contract_id }}" />
+    <input type="hidden" name="as_alias_id" value="{{ as_alias_id }}" />
+    <input type="hidden" name="theme" value="{{ theme if theme else 'paper' }}" />
+    <input type="hidden" name="webhook_target_url" value="{{ webhook_target }}" />
+    <input type="hidden" name="webhook_event_mask" value="{{ event_mask_csv }}" />
+
+    <div>
+      <button type="submit" {% if not contract_usable %}disabled{% endif %} style="height:34px; border:1px solid #6a5d4d; border-radius:6px; background:#fff; color:#6a5d4d; padding:0 12px; font-size:12px;">
+        Register Webhook (Stub)
+      </button>
+    </div>
+  </form>
+
+  <div style="margin-top:14px; border-top:1px solid #d9d6c8; padding-top:10px; font-size:12px;">
+    <div><strong>Configured:</strong> {{ 'yes' if status.get('paypal_configured') else 'no' }}</div>
+    <div><strong>Encrypted secret on file:</strong> {{ 'yes' if has_encrypted_secret else 'no' }}</div>
+    <div><strong>Last updated (unix ms):</strong> {{ status.get('last_updated_unix_ms', 0) }}</div>
+    <div><strong>Last error:</strong> {{ status.get('last_error', '') }}</div>
+  </div>
+</div>

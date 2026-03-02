@@ -176,6 +176,10 @@ body.theme-midnight .orgwidget__text{ color: #b7c6df; }
 .navcol__linkTitle{
   display:block;
   font-size: 13px;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .navcol__linkSub{
   display:block;

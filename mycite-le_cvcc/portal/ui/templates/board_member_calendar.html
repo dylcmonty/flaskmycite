@@ -1,0 +1,59 @@
+<section>
+  <h2 style="margin:0 0 10px; font-size:13px; letter-spacing:0.04em; text-transform:uppercase;">Create Event</h2>
+  <form method="post" action="{{ url_for('portal_embed_board_member_calendar_event') }}" style="display:grid; gap:8px; margin-bottom:16px;">
+    <input type="hidden" name="member_msn_id" value="{{ member_msn_id }}" />
+    <input type="hidden" name="as_alias_id" value="{{ as_alias_id }}" />
+    <input type="hidden" name="theme" value="{{ theme }}" />
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>Title</span>
+      <input name="title" required type="text" style="padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--panel);" />
+    </label>
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>Start ISO</span>
+      <input name="start_iso" required type="text" placeholder="2026-03-10T14:00:00Z" style="padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--panel);" />
+    </label>
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>End ISO</span>
+      <input name="end_iso" required type="text" placeholder="2026-03-10T15:00:00Z" style="padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--panel);" />
+    </label>
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>Location (optional)</span>
+      <input name="location" type="text" style="padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--panel);" />
+    </label>
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>Notes (optional)</span>
+      <textarea name="notes" rows="3" style="padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--panel);"></textarea>
+    </label>
+    <div>
+      <button type="submit" style="padding:8px 12px; border:1px solid var(--line); border-radius:6px; font-weight:700; background:var(--panel-soft); color:var(--ink); cursor:pointer;">
+        Create Event
+      </button>
+    </div>
+  </form>
+
+  <h2 style="margin:0 0 10px; font-size:13px; letter-spacing:0.04em; text-transform:uppercase;">Upcoming Events</h2>
+  {% if calendar_events %}
+    <div style="display:grid; gap:10px;">
+      {% for row in calendar_events %}
+        <article style="border:1px solid var(--line); border-radius:6px; background:var(--panel-soft); padding:10px;">
+          <div style="font-weight:700;">{{ row.payload.title }}</div>
+          <div style="font-size:12px; color:var(--subtle); margin-top:4px;">
+            {{ row.payload.start_iso }} → {{ row.payload.end_iso }}
+          </div>
+          {% if row.payload.location %}
+            <div style="font-size:12px; margin-top:4px;">Location: {{ row.payload.location }}</div>
+          {% endif %}
+          {% if row.payload.notes %}
+            <div style="margin-top:6px; white-space:pre-wrap;">{{ row.payload.notes }}</div>
+          {% endif %}
+          <div style="margin-top:6px; font-size:12px; color:var(--subtle);">
+            by {{ row.author_msn_id }} | {{ row.ts_label }}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="font-size:12px; color:var(--subtle);">No events yet.</div>
+  {% endif %}
+</section>
+

@@ -1,0 +1,41 @@
+<section>
+  <h2 style="margin:0 0 10px; font-size:13px; letter-spacing:0.04em; text-transform:uppercase;">Compose Post</h2>
+  <form method="post" action="{{ url_for('portal_embed_board_member_streams_post') }}" style="display:grid; gap:8px; margin-bottom:16px;">
+    <input type="hidden" name="member_msn_id" value="{{ member_msn_id }}" />
+    <input type="hidden" name="as_alias_id" value="{{ as_alias_id }}" />
+    <input type="hidden" name="theme" value="{{ theme }}" />
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>Title (optional)</span>
+      <input name="post_title" type="text" value="" style="padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--panel);" />
+    </label>
+    <label style="display:grid; gap:4px; font-size:12px;">
+      <span>Post text</span>
+      <textarea name="post_text" required rows="4" style="padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--panel);"></textarea>
+    </label>
+    <div>
+      <button type="submit" style="padding:8px 12px; border:1px solid var(--line); border-radius:6px; font-weight:700; background:var(--panel-soft); color:var(--ink); cursor:pointer;">
+        Publish Post
+      </button>
+    </div>
+  </form>
+
+  <h2 style="margin:0 0 10px; font-size:13px; letter-spacing:0.04em; text-transform:uppercase;">Recent Posts</h2>
+  {% if streams %}
+    <div style="display:grid; gap:10px;">
+      {% for row in streams %}
+        <article style="border:1px solid var(--line); border-radius:6px; background:var(--panel-soft); padding:10px;">
+          <div style="font-size:12px; color:var(--subtle); margin-bottom:6px;">
+            <strong>{{ row.author_msn_id }}</strong> | {{ row.ts_label }}
+          </div>
+          {% if row.payload.title %}
+            <div style="font-weight:700; margin-bottom:6px;">{{ row.payload.title }}</div>
+          {% endif %}
+          <div style="white-space:pre-wrap;">{{ row.payload.text }}</div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="font-size:12px; color:var(--subtle);">No posts yet.</div>
+  {% endif %}
+</section>
+

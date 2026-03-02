@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}MyCite | Data{% endblock %}
+
+{% set page_title = "Data" %}
+{% set page_subtitle = "Portal data tables (JSON-backed draft editor)" %}
+
+{% block body %}
+  <div class="card" style="max-width:860px;">
+    <div class="card__kicker">Tables</div>
+    <div class="card__title">Available Data Tables</div>
+    <div class="card__body">
+      <ul class="bullets">
+        {% for table in tables %}
+          <li><a href="/portal/data/{{ table.table_name }}">{{ table.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endblock %}

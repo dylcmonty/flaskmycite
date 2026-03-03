@@ -8,10 +8,13 @@ from urllib.parse import urlencode
 from flask import Flask, abort, jsonify, make_response, redirect, render_template, request
 from jinja2 import TemplateNotFound
 
-from data.data import list_table_catalog, register_data_routes
+from data.data import list_table_catalog, register_data_routes as register_legacy_data_routes
+from data.engine.workspace import Workspace
+from data.storage_json import JsonStorageBackend
 from portal.api.aliases import get_alias_record, list_alias_records, register_aliases_routes
 from portal.api.config import register_config_routes
 from portal.api.contracts import register_contract_routes
+from portal.api.data_workspace import register_data_routes as register_data_workspace_routes
 from portal.api.inbox import register_inbox_routes
 from portal.api.magnetlinks import register_magnetlinks_routes
 from portal.api.progeny_config import register_progeny_config_routes
@@ -289,7 +292,41 @@ def _field_names_for_alias(alias_payload: Dict[str, Any]) -> list[str]:
 
 
 MSN_ID = _infer_local_msn_id()
+
+
+def _load_active_private_config() -> Dict[str, Any]:
+    candidates: list[Path] = []
+    if MSN_ID:
+        candidates.append(PRIVATE_DIR / f"mycite-config-{MSN_ID}.json")
+    candidates.extend(sorted(PRIVATE_DIR.glob("mycite-config-*.json")))
+
+    seen: set[Path] = set()
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            payload = _read_json(path)
+        except Exception:
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return {}
+
+
+ACTIVE_PRIVATE_CONFIG = _load_active_private_config()
+DATA_TOOL_CONFIG = (
+    ACTIVE_PRIVATE_CONFIG.get("data_tool")
+    if isinstance(ACTIVE_PRIVATE_CONFIG.get("data_tool"), dict)
+    else {}
+)
+WORKSPACE_CONFIG: Dict[str, Any] = dict(DATA_TOOL_CONFIG)
+WORKSPACE_CONFIG["state_path"] = str(PRIVATE_DIR / "daemon_state" / "data_workspace.json")
+
 TOOL_TABS = register_tool_blueprints(app, read_enabled_tools(PRIVATE_DIR, msn_id=MSN_ID or None))
+DATA_WORKSPACE = Workspace(JsonStorageBackend(DATA_DIR), config=WORKSPACE_CONFIG)
 
 
 @app.get("/<msn_id>.json")
@@ -687,7 +724,16 @@ register_inbox_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_options_
 register_contract_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_options_private)
 register_magnetlinks_routes(app, private_dir=PRIVATE_DIR, options_private_fn=_options_private)
 register_progeny_config_routes(app, options_private_fn=_options_private)
-register_data_routes(app, aliases_provider=lambda: list_aliases_for_sidebar(PRIVATE_DIR))
+register_data_workspace_routes(
+    app,
+    workspace=DATA_WORKSPACE,
+    aliases_provider=lambda: list_aliases_for_sidebar(PRIVATE_DIR),
+    options_private_fn=_options_private,
+    msn_id_provider=lambda: MSN_ID,
+    include_home_redirect=False,
+    include_legacy_shims=False,
+)
+register_legacy_data_routes(app, aliases_provider=lambda: list_aliases_for_sidebar(PRIVATE_DIR))
 
 
 if __name__ == "__main__":

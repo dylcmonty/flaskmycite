@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 META_FIELDS = {"row_id", "_source", "_node_id"}
@@ -17,36 +17,35 @@ class DatumNode:
     label: str
     reference: str
     magnitude: str
-    layer: Optional[int]
-    value_group: Optional[int]
-    iteration: Optional[int]
-    field_ids: frozenset[str]
+    layer: int | None
+    value_group: int | None
+    iteration: int | None
     raw: dict[str, str]
 
 
 @dataclass
 class DatumGraph:
-    nodes: Dict[str, DatumNode] = field(default_factory=dict)
-    by_source: Dict[str, list[str]] = field(default_factory=dict)
-    by_layer: Dict[int, list[str]] = field(default_factory=dict)
-    by_identifier: Dict[str, list[str]] = field(default_factory=dict)
+    nodes: dict[str, DatumNode] = field(default_factory=dict)
+    by_source: dict[str, list[str]] = field(default_factory=dict)
+    by_layer: dict[int, list[str]] = field(default_factory=dict)
+    by_identifier: dict[str, list[str]] = field(default_factory=dict)
 
-    def get_node(self, node_id: str) -> Optional[DatumNode]:
+    def get_node(self, node_id: str) -> DatumNode | None:
         return self.nodes.get(node_id)
 
     def find_by_source(self, source: str) -> list[str]:
-        return list(self.by_source.get(source, []))
+        return list(self.by_source.get(str(source or "").strip().lower(), []))
 
-    def find_by_layer(self, layer: Optional[int]) -> list[str]:
+    def find_by_layer(self, layer: int | None) -> list[str]:
         if layer is None:
             return []
         return list(self.by_layer.get(layer, []))
 
     def find_by_identifier(self, identifier: str) -> list[str]:
-        return list(self.by_identifier.get(identifier, []))
+        return list(self.by_identifier.get(str(identifier or "").strip(), []))
 
 
-def parse_identifier_token(identifier: str) -> tuple[Optional[int], Optional[int], Optional[int]]:
+def parse_identifier_token(identifier: str) -> tuple[int | None, int | None, int | None]:
     token = str(identifier or "").strip()
     if not token:
         return None, None, None
@@ -54,10 +53,6 @@ def parse_identifier_token(identifier: str) -> tuple[Optional[int], Optional[int
     parts = token.split("-")
     if len(parts) < 3:
         return None, None, None
-
-    layer: Optional[int] = None
-    value_group: Optional[int] = None
-    iteration: Optional[int] = None
 
     try:
         layer = int(parts[0])
@@ -77,15 +72,6 @@ def parse_identifier_token(identifier: str) -> tuple[Optional[int], Optional[int
     return layer, value_group, iteration
 
 
-def _field_ids(row: dict[str, str]) -> frozenset[str]:
-    out = {
-        key
-        for key, value in row.items()
-        if key not in META_FIELDS and str(value or "").strip()
-    }
-    return frozenset(out)
-
-
 def build_graph(rows_by_table: dict[str, list[dict[str, str]]]) -> DatumGraph:
     graph = DatumGraph()
 
@@ -95,7 +81,7 @@ def build_graph(rows_by_table: dict[str, list[dict[str, str]]]) -> DatumGraph:
             if not row_id:
                 continue
 
-            source = str(row.get("_source") or table_id).strip() or table_id
+            source = str(row.get("_source") or table_id).strip().lower() or table_id
             identifier = str(row.get("identifier") or row.get("msn_id") or row_id).strip()
             label = str(row.get("label") or row.get("name") or identifier).strip()
             reference = str(row.get("reference") or "").strip()
@@ -105,6 +91,7 @@ def build_graph(rows_by_table: dict[str, list[dict[str, str]]]) -> DatumGraph:
             node_id = f"{table_id}:{row_id}"
             payload = dict(row)
             payload["_node_id"] = node_id
+
             node = DatumNode(
                 node_id=node_id,
                 table_id=table_id,
@@ -117,7 +104,6 @@ def build_graph(rows_by_table: dict[str, list[dict[str, str]]]) -> DatumGraph:
                 layer=layer,
                 value_group=value_group,
                 iteration=iteration,
-                field_ids=_field_ids(payload),
                 raw=payload,
             )
 
@@ -129,3 +115,22 @@ def build_graph(rows_by_table: dict[str, list[dict[str, str]]]) -> DatumGraph:
                 graph.by_identifier.setdefault(identifier, []).append(node_id)
 
     return graph
+
+
+def summarize_node(node: DatumNode | None) -> dict[str, Any]:
+    if node is None:
+        return {}
+    return {
+        "node_id": node.node_id,
+        "table_id": node.table_id,
+        "source": node.source,
+        "row_id": node.row_id,
+        "identifier": node.identifier,
+        "label": node.label,
+        "reference": node.reference,
+        "magnitude": node.magnitude,
+        "layer": node.layer,
+        "value_group": node.value_group,
+        "iteration": node.iteration,
+        "raw": dict(node.raw),
+    }

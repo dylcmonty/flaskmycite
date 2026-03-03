@@ -141,8 +141,41 @@ def _infer_local_msn_id() -> str:
 
 
 MSN_ID = _infer_local_msn_id()
+
+
+def _load_active_private_config() -> Dict[str, Any]:
+    candidates: list[Path] = []
+    if MSN_ID:
+        candidates.append(PRIVATE_DIR / f"mycite-config-{MSN_ID}.json")
+    candidates.extend(sorted(PRIVATE_DIR.glob("mycite-config-*.json")))
+
+    seen: set[Path] = set()
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        if not path.exists() or not path.is_file():
+            continue
+        try:
+            payload = _read_json(path)
+        except Exception:
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return {}
+
+
+ACTIVE_PRIVATE_CONFIG = _load_active_private_config()
+DATA_TOOL_CONFIG = (
+    ACTIVE_PRIVATE_CONFIG.get("data_tool")
+    if isinstance(ACTIVE_PRIVATE_CONFIG.get("data_tool"), dict)
+    else {}
+)
+WORKSPACE_CONFIG: Dict[str, Any] = dict(DATA_TOOL_CONFIG)
+WORKSPACE_CONFIG["state_path"] = str(PRIVATE_DIR / "daemon_state" / "data_workspace.json")
+
 TOOL_TABS = register_tool_blueprints(app, read_enabled_tools(PRIVATE_DIR, msn_id=MSN_ID or None))
-DATA_WORKSPACE = Workspace(JsonStorageBackend(DATA_DIR), config={})
+DATA_WORKSPACE = Workspace(JsonStorageBackend(DATA_DIR), config=WORKSPACE_CONFIG)
 
 
 def _format_sidebar_entity_title(raw: str) -> str:
@@ -384,6 +417,8 @@ register_data_routes(
     aliases_provider=lambda: list_aliases_ne(PRIVATE_DIR),
     options_private_fn=_options_private,
     msn_id_provider=lambda: MSN_ID,
+    include_home_redirect=True,
+    include_legacy_shims=True,
 )
 
 

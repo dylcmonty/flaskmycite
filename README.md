@@ -10,23 +10,29 @@ Repository for MyCite portal prototypes and portal-state instances.
 - `mycite-le_cvcc/`: client portal instance (CVCC)
 - `mycite-ne_mw/`, `mycite-ne_dm/`: demo/user portal instances
 - `mycite-le_tff/`, `mycite-ne_dg/`, `mycite-ne_eb/`, `mycite-ne_jt/`, `mycite-ne_ks/`, `mycite-ne_mt/`: state folders
-- `archive/`: historical design notes
+- `docs/archive/`: historical design notes
 - `.flask-multi/`: runtime PID/log artifacts for local launcher scripts
 
 ## Canonical docs
 
-- [`mss_notes.md`](mss_notes.md)
-- [`request_log_and_contracts.md`](request_log_and_contracts.md)
-- [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md)
-- [`DOCUMENTATION_POLICY.md`](DOCUMENTATION_POLICY.md)
+- [`docs/mss_notes.md`](docs/mss_notes.md)
+- [`docs/request_log_and_contracts.md`](docs/request_log_and_contracts.md)
+- [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md)
+- [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md)
+- [`docs/DATA_TOOL.md`](docs/DATA_TOOL.md)
 
 ## Data Architecture
 
-Core data capabilities are separated into three layers in the example portals:
+Core data capabilities are separated into three layers:
 
-1. Engine: `<portal>/data/engine/*`
-2. Controllers: `<portal>/portal/api/data_workspace.py`
-3. UI: `<portal>/portal/ui/templates/data/*` and `<portal>/portal/ui/static/data/data.js`
+1. Engine: `<portal>/data/engine/*` (no Flask imports)
+2. Controllers: `<portal>/portal/api/data_workspace.py` (thin HTTP glue)
+3. UI: tool package + templates/static (`<portal>/portal/tools/data_tool/*`, `<portal>/portal/ui/templates/tools/*`, `<portal>/portal/ui/static/tools/*`)
+
+The Data surface is packaged as a runtime-loaded tool tab:
+
+- Tool route: `/portal/tools/data_tool/home`
+- API namespace: `/portal/api/data/*`
 
 Development-only data experiments (extra lenses, ad-hoc recognizers, prototype parsing) are isolated to:
 

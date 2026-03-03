@@ -13,7 +13,7 @@ class AsciiLens:
         return LensResult(ok=False, errors=["Non-ASCII characters are not allowed by ascii lens."], warnings=[])
 
     def encode(self, display_value: str) -> str:
-        # TODO: plug in pattern-recognition normalization for structured tokens.
+        # Placeholder for future pattern recognizer/normalizer hooks.
         return str(display_value or "")
 
     def decode(self, raw_value: str) -> str:

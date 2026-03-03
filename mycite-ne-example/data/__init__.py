@@ -1,1 +1,1 @@
-"""Data engine package for example portal."""
+"""Data engine package for portal data tooling."""

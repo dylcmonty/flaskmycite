@@ -10,8 +10,15 @@
   "service_providers": [],
   "progeny": [],
   "enabled_tools": [
-    "paypal_demo"
+    "paypal_demo",
+    "data_tool"
   ],
+  "data_tool": {
+    "default_focus_source": "auto",
+    "default_mode": "general",
+    "default_lens": "default",
+    "enable_dev_data_features": false
+  },
   "contract_policy": {
     "allow_counterparties": [
       "3-2-3-17-77-2-6-1-1-2",

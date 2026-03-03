@@ -35,3 +35,4 @@ mycite-le_fnd/data/cache/**
 mycite-le_cvcc/private/workspaces/board/v1/*.ndjson
 mycite-le_cvcc/private/request_log/*.ndjson
 mycite-le_cvcc/data/cache/**
+**/private/daemon_state/data_workspace*.json

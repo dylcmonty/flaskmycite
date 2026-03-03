@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}MyCite | Data Tool{% endblock %}
+
+{% set page_title = "Data Tool" %}
+{% set page_subtitle = "NIMM-driven data workspace (nav / inv / med / man)" %}
+
+{% block body %}
+  <section class="card data-tool" id="dataToolApp">
+    <div class="data-tool__controls">
+      <div class="data-tool__controlRow">
+        <label>
+          <span>Source</span>
+          <select id="dtSource">
+            <option value="auto">auto</option>
+            <option value="anthology">anthology</option>
+            <option value="conspectus">conspectus</option>
+            <option value="samras">samras</option>
+          </select>
+        </label>
+        <button type="button" id="dtNavBtn">Run nav top_level_view</button>
+      </div>
+
+      <div class="data-tool__controlRow">
+        <label>
+          <span>Subject</span>
+          <input id="dtSubject" type="text" placeholder="datum id or archetype id" />
+        </label>
+        <label>
+          <span>inv method</span>
+          <select id="dtInvMethod">
+            <option value="summary">summary</option>
+            <option value="abstraction_path">abstraction_path</option>
+            <option value="instances">instances</option>
+          </select>
+        </label>
+        <button type="button" id="dtInvBtn">Run inv</button>
+      </div>
+
+      <div class="data-tool__controlRow">
+        <label>
+          <span>Mode</span>
+          <select id="dtMode">
+            <option value="general">general</option>
+            <option value="inspect">inspect</option>
+            <option value="raw">raw</option>
+            <option value="inferred">inferred</option>
+          </select>
+        </label>
+        <label>
+          <span>Lens</span>
+          <select id="dtLens">
+            <option value="default">default</option>
+            <option value="ascii">ascii</option>
+          </select>
+        </label>
+        <button type="button" id="dtModeBtn">Apply mode</button>
+        <button type="button" id="dtLensBtn">Apply lens</button>
+      </div>
+
+      <div class="data-tool__controlRow data-tool__editRow">
+        <label><span>table_id</span><input id="dtTableId" type="text" /></label>
+        <label><span>row_id</span><input id="dtRowId" type="text" /></label>
+        <label><span>field_id</span><input id="dtFieldId" type="text" /></label>
+        <label><span>new value</span><input id="dtValue" type="text" /></label>
+      </div>
+
+      <div class="data-tool__controlRow">
+        <label>
+          <span>Scope</span>
+          <select id="dtScope">
+            <option value="all">all</option>
+            <option value="table">table</option>
+            <option value="row">row</option>
+          </select>
+        </label>
+        <button type="button" id="dtStageBtn">Stage edit</button>
+        <button type="button" id="dtResetBtn">Reset staging</button>
+        <button type="button" id="dtCommitBtn">Commit</button>
+        <button type="button" id="dtRefreshBtn">Refresh state</button>
+      </div>
+    </div>
+
+    <div id="dtMessages" class="data-tool__messages" aria-live="polite"></div>
+
+    <div class="data-tool__state card">
+      <div class="card__kicker">State</div>
+      <pre id="dtStateSummary"></pre>
+    </div>
+
+    <div class="data-tool__panes">
+      <article class="card data-tool__pane">
+        <div class="card__kicker">Left Pane</div>
+        <div class="card__title">Navigation</div>
+        <pre id="dtLeftPane"></pre>
+      </article>
+
+      <article class="card data-tool__pane">
+        <div class="card__kicker">Right Pane</div>
+        <div class="card__title">Investigation</div>
+        <pre id="dtRightPane"></pre>
+      </article>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/portal/static/tools/data_tool.js"></script>
+{% endblock %}

@@ -4,16 +4,17 @@ This repository uses a canonical-docs model to avoid drift across portal instanc
 
 ## Canonical documentation location
 
-- Canonical docs live at repo root.
-- A future root `docs/` directory is allowed, but root files remain canonical unless explicitly superseded.
+- Canonical docs live under `docs/`.
+- Root files may link to canonical docs, but should not duplicate long-form canonical content.
 
 ## Canonical docs (current)
 
-- [`README.md`](README.md)
+- [`../README.md`](../README.md)
 - [`mss_notes.md`](mss_notes.md)
 - [`request_log_and_contracts.md`](request_log_and_contracts.md)
 - [`DEVELOPMENT_PLAN.md`](DEVELOPMENT_PLAN.md)
 - [`DOCUMENTATION_POLICY.md`](DOCUMENTATION_POLICY.md)
+- [`DATA_TOOL.md`](DATA_TOOL.md)
 
 ## Example portal docs
 
@@ -35,10 +36,10 @@ This repository uses a canonical-docs model to avoid drift across portal instanc
 ## Archive docs
 
 - `archive/*.md` files are historical reference material.
-- Archive files are not canonical and should not be treated as active implementation spec unless promoted to root canonical docs.
+- Archive files are not canonical and should not be treated as active implementation spec unless promoted into `docs/`.
 
 ## Contributor checklist
 
-- Add or update canonical guidance at repo root first.
-- In portal subdirectories, prefer links to root docs over duplicated content.
+- Add or update canonical guidance under `docs/` first.
+- In portal subdirectories, prefer links to `/docs/*` over duplicated content.
 - Keep non-example portal docs minimal and operational.

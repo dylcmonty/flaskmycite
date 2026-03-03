@@ -35,7 +35,8 @@ Data workspace note:
 
 ## Canonical docs
 
-- [`../mss_notes.md`](../mss_notes.md)
-- [`../request_log_and_contracts.md`](../request_log_and_contracts.md)
-- [`../DEVELOPMENT_PLAN.md`](../DEVELOPMENT_PLAN.md)
-- [`../DOCUMENTATION_POLICY.md`](../DOCUMENTATION_POLICY.md)
+- [`../docs/mss_notes.md`](../docs/mss_notes.md)
+- [`../docs/request_log_and_contracts.md`](../docs/request_log_and_contracts.md)
+- [`../docs/DEVELOPMENT_PLAN.md`](../docs/DEVELOPMENT_PLAN.md)
+- [`../docs/DOCUMENTATION_POLICY.md`](../docs/DOCUMENTATION_POLICY.md)
+- [`../docs/DATA_TOOL.md`](../docs/DATA_TOOL.md)

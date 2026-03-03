@@ -451,3 +451,66 @@ code{
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 12px;
 }
+
+/* NIMM Data Tool */
+.data-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.data-tool__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-tool__controlRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
+.data-tool__controlRow label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.data-tool__controlRow input,
+.data-tool__controlRow select,
+.data-tool__controlRow button {
+  min-height: 34px;
+}
+
+.data-tool__messages {
+  display: none;
+}
+
+.data-tool__state pre,
+.data-tool__pane pre {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  background: #fafafa;
+  overflow: auto;
+  max-height: 320px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+}
+
+.data-tool__panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .data-tool__panes {
+    grid-template-columns: 1fr;
+  }
+}

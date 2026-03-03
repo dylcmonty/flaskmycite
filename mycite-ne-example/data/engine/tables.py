@@ -3,10 +3,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-from data.engine.graph import DatumGraph
-
-
-META_FIELDS = {"row_id", "_source", "_node_id"}
+from data.engine.graph import DatumGraph, META_FIELDS
 
 
 def row_signature(row: dict[str, Any]) -> frozenset[str]:
@@ -45,7 +42,11 @@ def cluster_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def infer_tables(graph: DatumGraph, rows_by_table: dict[str, list[dict[str, str]]], title_by_table: dict[str, str]) -> dict[str, dict[str, Any]]:
+def infer_tables(
+    graph: DatumGraph,
+    rows_by_table: dict[str, list[dict[str, str]]],
+    title_by_table: dict[str, str],
+) -> dict[str, dict[str, Any]]:
     inferred: dict[str, dict[str, Any]] = {}
 
     for node in graph.nodes.values():
@@ -55,22 +56,24 @@ def infer_tables(graph: DatumGraph, rows_by_table: dict[str, list[dict[str, str]
         if node.layer is None:
             continue
 
-        table_id = f"layer-{node.layer}"
-        rows: list[dict[str, str]] = []
+        table_rows: list[dict[str, str]] = []
         for candidate_id in graph.find_by_layer(node.layer):
             candidate = graph.get_node(candidate_id)
-            if not candidate or candidate.node_id == node.node_id:
+            if candidate is None or candidate.node_id == node.node_id:
                 continue
             if candidate.value_group == 0:
                 continue
-            rows.append(dict(candidate.raw))
+            table_rows.append(dict(candidate.raw))
 
+        table_token = str(node.identifier or node.node_id).strip().replace(":", "-").replace("/", "-")
+        table_id = f"archetype-{table_token}"
         inferred[table_id] = {
             "table_id": table_id,
             "title": str(node.label or node.identifier or table_id),
             "layer": node.layer,
             "archetype_id": node.node_id,
-            "rows": rows,
+            "archetype_identifier": node.identifier,
+            "rows": table_rows,
         }
 
     if inferred:
@@ -86,11 +89,13 @@ def infer_tables(graph: DatumGraph, rows_by_table: dict[str, list[dict[str, str]
                 layer = int(first_identifier.split("-")[0])
             except Exception:
                 layer = None
+
         inferred[table_id] = {
             "table_id": table_id,
             "title": str(title_by_table.get(table_id) or table_id),
             "layer": layer,
             "archetype_id": "",
+            "archetype_identifier": "",
             "rows": [dict(row) for row in rows],
         }
 

@@ -2,41 +2,77 @@ from __future__ import annotations
 
 from typing import Any
 
-from data.engine.graph import DatumGraph
+from data.engine.graph import DatumGraph, DatumNode
 
 
-def resolve_chain(graph: DatumGraph, datum_id: str) -> list[str]:
-    node = graph.get_node(datum_id)
-    if not node:
+def _resolve_node(graph: DatumGraph, subject: str) -> DatumNode | None:
+    token = str(subject or "").strip()
+    if not token:
+        return None
+
+    direct = graph.get_node(token)
+    if direct is not None:
+        return direct
+
+    matches = graph.find_by_identifier(token)
+    if not matches:
+        return None
+    return graph.get_node(matches[0])
+
+
+def resolve_chain(graph: DatumGraph, subject: str, depth_limit: int = 12) -> list[dict[str, Any]]:
+    node = _resolve_node(graph, subject)
+    if node is None:
         return []
 
-    chain: list[str] = [node.node_id]
-    reference = str(node.reference or "").strip()
-    if not reference:
-        return chain
+    chain: list[dict[str, Any]] = []
+    visited: set[str] = set()
+    cursor: DatumNode | None = node
 
-    matches = graph.find_by_identifier(reference)
-    for match in matches:
-        if match != node.node_id:
-            chain.append(match)
+    while cursor is not None and cursor.node_id not in visited and len(chain) < depth_limit:
+        visited.add(cursor.node_id)
+        chain.append(
+            {
+                "node_id": cursor.node_id,
+                "identifier": cursor.identifier,
+                "label": cursor.label,
+                "reference": cursor.reference,
+                "layer": cursor.layer,
+                "value_group": cursor.value_group,
+            }
+        )
+
+        ref = str(cursor.reference or "").strip()
+        if not ref:
             break
+
+        targets = graph.find_by_identifier(ref)
+        if not targets:
+            break
+
+        next_node_id = targets[0]
+        cursor = graph.get_node(next_node_id)
 
     return chain
 
 
-def compile_constraint(node: Any, chain: list[str]) -> dict[str, Any]:
+def compile_constraint(node: DatumNode, chain: list[dict[str, Any]]) -> dict[str, Any]:
     warnings: list[str] = []
+    errors: list[str] = []
 
-    reference = str(getattr(node, "reference", "") or "").strip()
-    if reference and len(chain) <= 1:
+    if str(node.reference or "").strip() and len(chain) <= 1:
         warnings.append("unresolved_reference")
 
-    value_group = getattr(node, "value_group", None)
-    if value_group is None:
+    if node.value_group is None:
         warnings.append("identifier_not_structured")
 
+    if node.layer is None:
+        warnings.append("unknown_layer")
+
     return {
-        "node_id": str(getattr(node, "node_id", "")),
-        "chain": list(chain),
+        "node_id": node.node_id,
+        "identifier": node.identifier,
+        "chain_depth": len(chain),
+        "errors": errors,
         "warnings": warnings,
     }

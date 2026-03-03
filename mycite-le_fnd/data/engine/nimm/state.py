@@ -27,10 +27,19 @@ class DataViewState:
     mode: str = "general"
     lens_context: dict[str, Any] = field(default_factory=lambda: {"default": "default", "overrides": {}})
     staged_edits: dict[str, dict[str, str]] = field(default_factory=dict)
+    staged_presentation_edits: dict[str, dict[str, str]] = field(default_factory=lambda: {"datum_icons": {}})
     validation_errors: list[str] = field(default_factory=list)
     selection: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        staged_presentation = (
+            dict(self.staged_presentation_edits)
+            if isinstance(self.staged_presentation_edits, dict)
+            else {"datum_icons": {}}
+        )
+        if not isinstance(staged_presentation.get("datum_icons"), dict):
+            staged_presentation["datum_icons"] = {}
+
         return {
             "focus_source": normalize_source(self.focus_source),
             "focus_subject": str(self.focus_subject or ""),
@@ -42,6 +51,7 @@ class DataViewState:
                 "overrides": dict((self.lens_context or {}).get("overrides") or {}),
             },
             "staged_edits": dict(self.staged_edits or {}),
+            "staged_presentation_edits": staged_presentation,
             "validation_errors": list(self.validation_errors or []),
             "selection": dict(self.selection or {}),
         }
@@ -57,6 +67,13 @@ class DataViewState:
     ) -> "DataViewState":
         data = payload if isinstance(payload, dict) else {}
         lens_context = data.get("lens_context") if isinstance(data.get("lens_context"), dict) else {}
+        staged_presentation = (
+            data.get("staged_presentation_edits")
+            if isinstance(data.get("staged_presentation_edits"), dict)
+            else {"datum_icons": {}}
+        )
+        if not isinstance(staged_presentation.get("datum_icons"), dict):
+            staged_presentation["datum_icons"] = {}
 
         return cls(
             focus_source=normalize_source(str(data.get("focus_source") or default_focus_source), normalize_source(default_focus_source)),
@@ -69,6 +86,7 @@ class DataViewState:
                 "overrides": dict(lens_context.get("overrides") or {}),
             },
             staged_edits=dict(data.get("staged_edits") or {}),
+            staged_presentation_edits=dict(staged_presentation),
             validation_errors=list(data.get("validation_errors") or []),
             selection=dict(data.get("selection") or {}),
         )

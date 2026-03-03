@@ -1,5 +1,6 @@
 (function () {
   function qs(selector, root) { return (root || document).querySelector(selector); }
+  function qsa(selector, root) { return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
 
   var app = qs("#dataToolApp");
   if (!app) return;
@@ -30,6 +31,26 @@
   var leftPaneEl = qs("#dtLeftPane", app);
   var rightPaneEl = qs("#dtRightPane", app);
 
+  var iconModal = qs("#dtIconModal");
+  var iconListEl = qs("#dtIconList");
+  var iconSearchInput = qs("#dtIconSearch");
+  var iconTargetEl = qs("#dtIconTarget");
+  var iconCloseBtn = qs("#dtIconCloseBtn");
+  var iconClearBtn = qs("#dtIconClearBtn");
+
+  var iconCatalog = [];
+  var iconCatalogLoaded = false;
+  var iconTargetDatumId = "";
+
+  function escapeText(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function setMessages(errors, warnings) {
     var err = Array.isArray(errors) ? errors.filter(Boolean) : [];
     var warn = Array.isArray(warnings) ? warnings.filter(Boolean) : [];
@@ -41,18 +62,149 @@
     }
     messagesEl.style.display = "block";
     messagesEl.innerHTML = "";
+
     err.forEach(function (msg) {
       var row = document.createElement("div");
       row.className = "data-message is-error";
       row.textContent = msg;
       messagesEl.appendChild(row);
     });
+
     warn.forEach(function (msg) {
       var row = document.createElement("div");
       row.className = "data-message is-warn";
       row.textContent = msg;
       messagesEl.appendChild(row);
     });
+  }
+
+  function extractDatumEntries(payload) {
+    var out = [];
+
+    function walk(value) {
+      if (!value) return;
+      if (Array.isArray(value)) {
+        value.forEach(walk);
+        return;
+      }
+      if (typeof value !== "object") return;
+
+      var datumId = typeof value.datum_id === "string" ? value.datum_id.trim() : "";
+      var labelText = typeof value.label_text === "string" ? value.label_text.trim() : "";
+      var iconRelpath = typeof value.icon_relpath === "string" ? value.icon_relpath.trim() : "";
+      var iconUrl = typeof value.icon_url === "string" ? value.icon_url.trim() : "";
+
+      if (datumId) {
+        out.push({
+          datum_id: datumId,
+          label_text: labelText || datumId,
+          icon_relpath: iconRelpath,
+          icon_url: iconUrl,
+          icon_assigned: Boolean(value.icon_assigned || iconUrl || iconRelpath),
+        });
+      }
+
+      Object.keys(value).forEach(function (key) {
+        walk(value[key]);
+      });
+    }
+
+    walk(payload);
+    return out;
+  }
+
+  function renderDatumList(targetEl, entries) {
+    targetEl.innerHTML = "";
+
+    if (!entries.length) {
+      var empty = document.createElement("p");
+      empty.className = "data-tool__empty";
+      empty.textContent = "No datum entries for this pane.";
+      targetEl.appendChild(empty);
+      return;
+    }
+
+    var list = document.createElement("div");
+    list.className = "data-tool__datumList";
+
+    entries.forEach(function (entry) {
+      var row = document.createElement("div");
+      row.className = "data-tool__datumRow";
+
+      var iconBtn = document.createElement("button");
+      iconBtn.type = "button";
+      iconBtn.className = "data-tool__iconButton js-open-icon-picker";
+      iconBtn.setAttribute("data-datum-id", entry.datum_id);
+      iconBtn.setAttribute("title", "Set icon for " + entry.datum_id);
+
+      if (entry.icon_url) {
+        var image = document.createElement("img");
+        image.src = entry.icon_url;
+        image.alt = "";
+        image.className = "datum-icon";
+        iconBtn.appendChild(image);
+      } else {
+        var placeholder = document.createElement("span");
+        placeholder.className = "datum-icon datum-icon--placeholder";
+        placeholder.textContent = "+";
+        iconBtn.appendChild(placeholder);
+      }
+
+      var textWrap = document.createElement("div");
+      textWrap.className = "data-tool__datumText";
+
+      var title = document.createElement("div");
+      title.className = "data-tool__datumTitle";
+      title.textContent = entry.label_text;
+
+      var meta = document.createElement("div");
+      meta.className = "data-tool__datumMeta";
+      meta.innerHTML = "<code>" + escapeText(entry.datum_id) + "</code>";
+      if (entry.icon_relpath) {
+        meta.innerHTML += "<span>" + escapeText(entry.icon_relpath) + "</span>";
+      } else {
+        meta.innerHTML += "<span>no icon</span>";
+      }
+
+      textWrap.appendChild(title);
+      textWrap.appendChild(meta);
+
+      row.appendChild(iconBtn);
+      row.appendChild(textWrap);
+      list.appendChild(row);
+    });
+
+    targetEl.appendChild(list);
+  }
+
+  function renderPane(targetEl, paneVm) {
+    if (!targetEl) return;
+
+    var pane = paneVm && typeof paneVm === "object" ? paneVm : {};
+    var payload = pane.payload && typeof pane.payload === "object" ? pane.payload : {};
+    var entries = extractDatumEntries(payload);
+
+    targetEl.innerHTML = "";
+
+    var kindEl = document.createElement("div");
+    kindEl.className = "data-tool__paneKind";
+    kindEl.textContent = "kind: " + (pane.kind || "none");
+    targetEl.appendChild(kindEl);
+
+    var listWrap = document.createElement("div");
+    listWrap.className = "data-tool__paneList";
+    renderDatumList(listWrap, entries);
+    targetEl.appendChild(listWrap);
+
+    var details = document.createElement("details");
+    details.className = "data-tool__raw";
+    var summary = document.createElement("summary");
+    summary.textContent = "Raw pane payload";
+    var pre = document.createElement("pre");
+    pre.textContent = JSON.stringify(payload, null, 2);
+    details.appendChild(summary);
+    details.appendChild(pre);
+    targetEl.appendChild(details);
   }
 
   function render(snapshot) {
@@ -69,13 +221,15 @@
           lens_context: state.lens_context,
           selection: state.selection,
           staged_edits: snapshot.staged_edits || [],
+          staged_presentation_edits: snapshot.staged_presentation_edits || { datum_icons: {} },
         },
         null,
         2
       );
     }
-    if (leftPaneEl) leftPaneEl.textContent = JSON.stringify(left, null, 2);
-    if (rightPaneEl) rightPaneEl.textContent = JSON.stringify(right, null, 2);
+
+    renderPane(leftPaneEl, left);
+    renderPane(rightPaneEl, right);
 
     if (modeSel && state.mode) modeSel.value = state.mode;
     if (sourceSel && state.focus_source) sourceSel.value = state.focus_source;
@@ -91,7 +245,11 @@
   async function api(path, options) {
     var res = await fetch(path, options || {});
     var payload = {};
-    try { payload = await res.json(); } catch (_) { payload = {}; }
+    try {
+      payload = await res.json();
+    } catch (_) {
+      payload = {};
+    }
     if (!res.ok) {
       throw new Error(payload.description || payload.message || "Request failed");
     }
@@ -155,6 +313,135 @@
     });
     render(payload);
     return payload;
+  }
+
+  async function loadIconCatalog() {
+    if (iconCatalogLoaded) return iconCatalog;
+    var payload = await api("/portal/api/data/icons/list");
+    iconCatalog = Array.isArray(payload.icon_relpaths) ? payload.icon_relpaths : [];
+    iconCatalogLoaded = true;
+    return iconCatalog;
+  }
+
+  function renderIconOptions() {
+    if (!iconListEl) return;
+
+    var filter = iconSearchInput ? iconSearchInput.value.trim().toLowerCase() : "";
+    var filtered = iconCatalog.filter(function (rel) {
+      if (!filter) return true;
+      return rel.toLowerCase().indexOf(filter) !== -1;
+    });
+
+    iconListEl.innerHTML = "";
+    if (!filtered.length) {
+      var empty = document.createElement("p");
+      empty.className = "data-tool__empty";
+      empty.textContent = "No icons match current filter.";
+      iconListEl.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach(function (rel) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "data-tool__iconOption";
+      btn.setAttribute("data-icon-relpath", rel);
+
+      var img = document.createElement("img");
+      img.src = "/portal/static/icons/" + rel;
+      img.alt = "";
+      img.className = "datum-icon";
+
+      var text = document.createElement("span");
+      text.textContent = rel;
+
+      btn.appendChild(img);
+      btn.appendChild(text);
+      iconListEl.appendChild(btn);
+    });
+  }
+
+  function closeIconModal() {
+    if (!iconModal) return;
+    iconModal.hidden = true;
+    iconTargetDatumId = "";
+    if (iconTargetEl) iconTargetEl.textContent = "";
+  }
+
+  async function openIconModal(datumId) {
+    iconTargetDatumId = String(datumId || "").trim();
+    if (!iconTargetDatumId || !iconModal) return;
+
+    if (iconTargetEl) {
+      iconTargetEl.innerHTML = "Target datum: <code>" + escapeText(iconTargetDatumId) + "</code>";
+    }
+
+    iconModal.hidden = false;
+
+    try {
+      await loadIconCatalog();
+      renderIconOptions();
+      if (iconSearchInput) iconSearchInput.focus();
+    } catch (err) {
+      setMessages([err.message], []);
+      closeIconModal();
+    }
+  }
+
+  async function setDatumIcon(iconRelpath) {
+    if (!iconTargetDatumId) return;
+    try {
+      await postDirective("man", "datum_icon", "set", {
+        datum_id: iconTargetDatumId,
+        icon_relpath: String(iconRelpath || ""),
+      });
+      closeIconModal();
+    } catch (err) {
+      setMessages([err.message], []);
+    }
+  }
+
+  if (iconSearchInput) {
+    iconSearchInput.addEventListener("input", renderIconOptions);
+  }
+
+  if (iconCloseBtn) {
+    iconCloseBtn.addEventListener("click", closeIconModal);
+  }
+
+  qsa("[data-role='close-icon-modal']").forEach(function (node) {
+    node.addEventListener("click", closeIconModal);
+  });
+
+  if (iconClearBtn) {
+    iconClearBtn.addEventListener("click", function () {
+      setDatumIcon("");
+    });
+  }
+
+  if (iconListEl) {
+    iconListEl.addEventListener("click", function (event) {
+      var button = event.target && event.target.closest ? event.target.closest(".data-tool__iconOption") : null;
+      if (!button) return;
+      var rel = button.getAttribute("data-icon-relpath") || "";
+      setDatumIcon(rel);
+    });
+  }
+
+  if (leftPaneEl) {
+    leftPaneEl.addEventListener("click", function (event) {
+      var button = event.target && event.target.closest ? event.target.closest(".js-open-icon-picker") : null;
+      if (!button) return;
+      openIconModal(button.getAttribute("data-datum-id") || "");
+    });
+  }
+
+  if (rightPaneEl) {
+    rightPaneEl.addEventListener("click", function (event) {
+      var button = event.target && event.target.closest ? event.target.closest(".js-open-icon-picker") : null;
+      if (!button) return;
+      openIconModal(button.getAttribute("data-datum-id") || "");
+    });
   }
 
   if (navBtn) {

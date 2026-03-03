@@ -89,6 +89,7 @@
 - [ ] Keep Data Tool semantics in `data/engine/*` and `data/engine/nimm/*` with no Flask imports.
 - [ ] Keep controller glue thin in `portal/api/data_workspace.py`.
 - [ ] Keep lens registry baseline (`default`, `ascii`) in examples; load experiments only in FND behind config.
+- [ ] Land datum SVG icon support via presentation sidecar (`data/presentation/datum_icons.json`) + picker UI and `/portal/api/data/icons/list`.
 - [ ] Define migration interface from JSON storage to DB-backed adapters.
 
 ### Tools and magnetlinks

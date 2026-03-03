@@ -20,6 +20,7 @@ Repository for MyCite portal prototypes and portal-state instances.
 - [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md)
 - [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md)
 - [`docs/DATA_TOOL.md`](docs/DATA_TOOL.md)
+- [`docs/DATA_TOOL_ICONS.md`](docs/DATA_TOOL_ICONS.md)
 
 ## Data Architecture
 

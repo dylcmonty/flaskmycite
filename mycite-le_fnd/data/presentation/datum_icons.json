@@ -1,0 +1,10 @@
+{
+  "_meta": {
+    "schema": "mycite.presentation.datum_icons.v0",
+    "icon_root": "assets/icons"
+  },
+  "map": {
+    "11-0-1": "tables/msn_index.svg",
+    "4-1-9": "fields/ascii_field.svg"
+  }
+}

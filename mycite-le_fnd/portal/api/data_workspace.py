@@ -52,6 +52,8 @@ def register_data_routes(
             "left_pane_vm": snapshot.get("left_pane_vm", {}),
             "right_pane_vm": snapshot.get("right_pane_vm", {}),
             "staged_edits": snapshot.get("staged_edits", []),
+            "staged_presentation_edits": snapshot.get("staged_presentation_edits", {"datum_icons": {}}),
+            "datum_icons_map": snapshot.get("datum_icons_map", {}),
             "errors": list(result.get("errors") or []),
             "warnings": list(result.get("warnings") or []),
         }
@@ -69,6 +71,10 @@ def register_data_routes(
         if options_private_fn is not None and msn_id:
             snapshot["options_private"] = options_private_fn(msn_id)
         return jsonify(snapshot)
+
+    @app.get("/portal/api/data/icons/list")
+    def portal_data_icons_list():
+        return jsonify({"ok": True, "icon_relpaths": workspace.list_available_icons()})
 
     @app.post("/portal/api/data/directive")
     def portal_data_directive():
@@ -163,7 +169,8 @@ def register_data_routes(
         body = _json_body()
         scope = str(body.get("scope") or "all").strip().lower()
         table_id = str(body.get("table_id") or "").strip() or None
-        result = workspace.reset_staging(scope=scope, table_id=table_id)
+        row_id = str(body.get("row_id") or "").strip() or None
+        result = workspace.reset_staging(scope=scope, table_id=table_id, row_id=row_id)
         payload = _state_payload(result)
         payload.setdefault("warnings", []).append("deprecated endpoint")
         return jsonify(payload)

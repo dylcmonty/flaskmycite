@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
-from flask import Flask, abort, jsonify, make_response, render_template, request
+from flask import Flask, abort, jsonify, make_response, render_template, request, send_from_directory
 from jinja2 import TemplateNotFound
 
 from data.engine.workspace import Workspace
@@ -29,10 +29,12 @@ app = Flask(
 )
 
 BASE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BASE_DIR.parent
 PUBLIC_DIR = Path(os.environ.get("PUBLIC_DIR", str(BASE_DIR / "public")))
 PRIVATE_DIR = Path(os.environ.get("PRIVATE_DIR", str(BASE_DIR / "private")))
 DATA_DIR = Path(os.environ.get("DATA_DIR", str(BASE_DIR / "data")))
 FALLBACK_DIR = BASE_DIR
+ICONS_DIR = REPO_ROOT / "assets" / "icons"
 
 AUTH_MODE = os.environ.get("AUTH_MODE", "none")  # none | keycloak (later)
 
@@ -173,6 +175,8 @@ DATA_TOOL_CONFIG = (
 )
 WORKSPACE_CONFIG: Dict[str, Any] = dict(DATA_TOOL_CONFIG)
 WORKSPACE_CONFIG["state_path"] = str(PRIVATE_DIR / "daemon_state" / "data_workspace.json")
+WORKSPACE_CONFIG["icon_root"] = str(ICONS_DIR)
+WORKSPACE_CONFIG["icon_base_url"] = "/portal/static/icons"
 
 TOOL_TABS = register_tool_blueprints(app, read_enabled_tools(PRIVATE_DIR, msn_id=MSN_ID or None))
 DATA_WORKSPACE = Workspace(JsonStorageBackend(DATA_DIR), config=WORKSPACE_CONFIG)
@@ -319,6 +323,27 @@ def enforce_boundaries() -> None:
         return
     elif is_public_path(path):
         return
+
+
+@app.get("/portal/static/icons/<path:relpath>")
+def portal_static_icons(relpath: str):
+    token = str(relpath or "").strip().replace("\\", "/")
+    rel = Path(token)
+    if not token or rel.is_absolute() or ".." in rel.parts:
+        abort(404)
+    if rel.suffix.lower() != ".svg":
+        abort(404)
+
+    try:
+        resolved = (ICONS_DIR / rel).resolve()
+        resolved.relative_to(ICONS_DIR.resolve())
+    except Exception:
+        abort(404)
+
+    if not resolved.exists() or not resolved.is_file():
+        abort(404)
+
+    return send_from_directory(ICONS_DIR, rel.as_posix(), mimetype="image/svg+xml")
 
 
 @app.get("/<msn_id>.json")

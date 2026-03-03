@@ -205,6 +205,23 @@ These enforce set membership.
 
 These do not enforce validity; they improve readability and usability.
 
+### 7.4 Presentation sidecars (icon metadata)
+Presentation metadata that should not alter datum semantics is stored in sidecar JSON, not in anthology payloads.
+
+Current pattern:
+- Per portal sidecar: `<portal>/data/presentation/datum_icons.json`
+- Canonical icon assets: `/assets/icons/**`
+- Mapping shape: `map[datum_id] -> "tables/foo.svg"` (relative to `assets/icons`)
+
+Responsibilities:
+- Engine/storage: load and persist sidecar mappings.
+- Controller: expose icon listing and static icon serving routes with path restrictions.
+- UI: render `[icon + label_text]` and dispatch icon-assignment directives.
+
+NIMM alignment:
+- Icon assignment is a `man` action on presentation state (`datum_icon:set`).
+- Changes stage in workspace state and commit independently from anthology table/value commits.
+
 ### 7.3 Lens matching strategy
 A lens should not rely on hard-coded IDs alone.
 It should match by **reference-chain pattern**.

@@ -92,16 +92,48 @@
       <article class="card data-tool__pane">
         <div class="card__kicker">Left Pane</div>
         <div class="card__title">Navigation</div>
-        <pre id="dtLeftPane"></pre>
+        <div id="dtLeftPane" class="data-tool__paneBody"></div>
       </article>
 
       <article class="card data-tool__pane">
         <div class="card__kicker">Right Pane</div>
         <div class="card__title">Investigation</div>
-        <pre id="dtRightPane"></pre>
+        <div id="dtRightPane" class="data-tool__paneBody"></div>
       </article>
     </div>
+
+    <section class="card data-tool__legend">
+      <div class="card__kicker">Presentation Sidecar</div>
+      <p class="data-tool__legendText">
+        Icon selections are staged as presentation metadata and commit into
+        <code>data/presentation/datum_icons.json</code>.
+      </p>
+    </section>
   </section>
+
+  <div id="dtIconModal" class="data-tool__iconModal" hidden>
+    <div class="data-tool__iconBackdrop" data-role="close-icon-modal"></div>
+    <section class="card data-tool__iconDialog" role="dialog" aria-modal="true" aria-labelledby="dtIconModalTitle">
+      <header class="data-tool__iconHeader">
+        <div>
+          <div class="card__kicker">Icon Picker</div>
+          <div id="dtIconModalTitle" class="card__title">Select datum icon</div>
+          <p id="dtIconTarget" class="data-tool__iconTarget"></p>
+        </div>
+        <button type="button" id="dtIconCloseBtn">Close</button>
+      </header>
+
+      <div class="data-tool__iconControls">
+        <label>
+          <span>Search icons</span>
+          <input id="dtIconSearch" type="text" placeholder="filter by path or filename" />
+        </label>
+        <button type="button" id="dtIconClearBtn">Clear icon</button>
+      </div>
+
+      <div id="dtIconList" class="data-tool__iconList"></div>
+    </section>
+  </div>
 {% endblock %}
 
 {% block scripts %}

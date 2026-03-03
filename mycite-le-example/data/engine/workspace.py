@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -14,18 +15,26 @@ from data.engine.nimm.viewmodels import empty_pane, pane, response_payload
 from data.engine.tables import cluster_rows, infer_tables
 
 
+_DATUM_ID_RE = re.compile(r"^[0-9]+-[0-9]+-[0-9]+$")
+
+
 class Workspace:
     def __init__(self, storage_backend, config: dict[str, Any] | None = None):
         self.storage = storage_backend
         self.config = config or {}
 
         self._state_path = self._resolve_state_path()
+        self._icon_root = self._resolve_icon_root()
+        self._icon_base_url = str(self.config.get("icon_base_url") or "/portal/static/icons").rstrip("/")
         self._startup_warnings: list[str] = []
 
         self._staged: dict[tuple[str, str, str], str] = {}
+        self._staged_presentation_icons: dict[str, str] = {}
+
         self._rows_by_table: dict[str, list[dict[str, str]]] = {}
         self._tables: dict[str, dict[str, Any]] = {}
         self._graph = build_graph({})
+        self._datum_icons_map: dict[str, str] = {}
 
         self._reload()
         self._state = self._load_state()
@@ -39,6 +48,15 @@ class Workspace:
             return None
         try:
             return Path(str(token))
+        except Exception:
+            return None
+
+    def _resolve_icon_root(self) -> Path | None:
+        token = self.config.get("icon_root")
+        if not token:
+            return None
+        try:
+            return Path(str(token)).resolve()
         except Exception:
             return None
 
@@ -61,6 +79,7 @@ class Workspace:
             mode=self._default_mode(),
             lens_context={"default": self._default_lens(), "overrides": {}},
             staged_edits={},
+            staged_presentation_edits={"datum_icons": {}},
             validation_errors=[],
             selection={},
         )
@@ -74,13 +93,12 @@ class Workspace:
 
         try:
             payload = json.loads(self._state_path.read_text(encoding="utf-8"))
-            state = DataViewState.from_dict(
+            return DataViewState.from_dict(
                 payload,
                 default_focus_source=self._default_focus_source(),
                 default_mode=self._default_mode(),
                 default_lens=self._default_lens(),
             )
-            return state
         except Exception:
             self._startup_warnings.append("state_recovered_from_malformed_payload")
             return self._default_state()
@@ -99,6 +117,7 @@ class Workspace:
         self._graph = build_graph(self._rows_by_table)
         title_by_table = {table_id: self.storage.table_title(table_id) for table_id in self.storage.known_tables()}
         self._tables = infer_tables(self._graph, self._rows_by_table, title_by_table)
+        self._datum_icons_map = self.storage.load_datum_icons_map()
 
     def _sync_staging_from_state(self) -> None:
         staged = self._state.staged_edits if isinstance(self._state.staged_edits, dict) else {}
@@ -114,6 +133,21 @@ class Workspace:
                 out[(table_id, row_id, field_id)] = value
         self._staged = out
 
+        staged_presentation = (
+            self._state.staged_presentation_edits
+            if isinstance(self._state.staged_presentation_edits, dict)
+            else {"datum_icons": {}}
+        )
+        datum_icons = staged_presentation.get("datum_icons") if isinstance(staged_presentation.get("datum_icons"), dict) else {}
+
+        icon_out: dict[str, str] = {}
+        for key, value in datum_icons.items():
+            datum_id = str(key or "").strip()
+            if not datum_id:
+                continue
+            icon_out[datum_id] = self._normalize_icon_relpath(value)
+        self._staged_presentation_icons = icon_out
+
     def _sync_state_staging(self) -> None:
         staged: dict[str, dict[str, str]] = {}
         for table_id, row_id, field_id in sorted(self._staged.keys()):
@@ -125,6 +159,9 @@ class Workspace:
                 "display_value": self._staged[(table_id, row_id, field_id)],
             }
         self._state.staged_edits = staged
+        self._state.staged_presentation_edits = {
+            "datum_icons": dict(sorted(self._staged_presentation_icons.items(), key=lambda item: item[0]))
+        }
 
     def _table(self, table_id: str) -> dict[str, Any] | None:
         return self._tables.get(str(table_id or "").strip())
@@ -169,15 +206,108 @@ class Workspace:
                 return list(bucket.get("rows") or [])
         return []
 
+    @staticmethod
+    def _normalize_icon_relpath(value: object) -> str:
+        token = str(value or "").strip().replace("\\", "/")
+        token = token.lstrip("/")
+        if token.startswith("assets/icons/"):
+            token = token[len("assets/icons/") :]
+        return token
+
+    def _effective_icon_relpath(self, datum_id: str) -> str:
+        token = str(datum_id or "").strip()
+        if not token:
+            return ""
+        if token in self._staged_presentation_icons:
+            return self._normalize_icon_relpath(self._staged_presentation_icons[token])
+        return self._normalize_icon_relpath(self._datum_icons_map.get(token, ""))
+
+    def _icon_url(self, icon_relpath: str) -> str | None:
+        rel = self._normalize_icon_relpath(icon_relpath)
+        if not rel:
+            return None
+        return f"{self._icon_base_url}/{rel}"
+
+    def _icon_meta(self, datum_id: str, label_text: str = "") -> dict[str, Any]:
+        rel = self._effective_icon_relpath(datum_id)
+        return {
+            "datum_id": str(datum_id or ""),
+            "label_text": str(label_text or datum_id or ""),
+            "icon_relpath": rel or None,
+            "icon_url": self._icon_url(rel),
+            "icon_assigned": bool(rel),
+        }
+
+    def _enrich_datum_entry(self, datum_id: str, label_text: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+        payload = dict(extra or {})
+        payload.update(self._icon_meta(datum_id, label_text))
+        if "identifier" not in payload:
+            payload["identifier"] = str(datum_id or "")
+        return payload
+
+    def _valid_datum_id(self, datum_id: str) -> bool:
+        token = str(datum_id or "").strip()
+        if not token:
+            return False
+        if self._graph.find_by_identifier(token):
+            return True
+        return bool(_DATUM_ID_RE.fullmatch(token))
+
+    def _icon_exists(self, icon_relpath: str) -> bool:
+        rel = self._normalize_icon_relpath(icon_relpath)
+        if not rel:
+            return True
+        if self._icon_root is None:
+            return False
+        if not rel.lower().endswith(".svg"):
+            return False
+
+        rel_path = Path(rel)
+        if rel_path.is_absolute() or ".." in rel_path.parts:
+            return False
+
+        candidate = (self._icon_root / rel_path).resolve()
+        try:
+            candidate.relative_to(self._icon_root)
+        except Exception:
+            return False
+
+        return candidate.exists() and candidate.is_file()
+
+    def list_available_icons(self) -> list[str]:
+        if self._icon_root is None or not self._icon_root.exists() or not self._icon_root.is_dir():
+            return []
+
+        rels: list[str] = []
+        for path in sorted(self._icon_root.rglob("*.svg")):
+            if not path.is_file():
+                continue
+            try:
+                rel = path.resolve().relative_to(self._icon_root).as_posix()
+            except Exception:
+                continue
+            rels.append(rel)
+        return rels
+
     def list_tables(self) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         for table_id, table in sorted(self._tables.items(), key=lambda item: item[0]):
+            archetype_identifier = str(table.get("archetype_identifier") or "")
+            meta = self._icon_meta(archetype_identifier, str(table.get("title") or table_id)) if archetype_identifier else {
+                "datum_id": "",
+                "label_text": str(table.get("title") or table_id),
+                "icon_relpath": None,
+                "icon_url": None,
+                "icon_assigned": False,
+            }
             out.append(
                 {
                     "table_id": table_id,
                     "title": str(table.get("title") or table_id),
                     "layer": table.get("layer"),
                     "archetype_id": str(table.get("archetype_id") or ""),
+                    "archetype_identifier": archetype_identifier,
+                    **meta,
                 }
             )
         return out
@@ -231,6 +361,9 @@ class Workspace:
             row_errors: list[str] = []
             row_warnings: list[str] = []
 
+            datum_id = str(row.get("identifier") or row.get("msn_id") or row_id).strip()
+            label_text = str(row.get("label") or row.get("name") or datum_id).strip()
+
             for field_id in columns:
                 lens = get_lens(field_id, lens_context=self._state.lens_context, config=self.config)
                 raw_value = str(row.get(field_id) or "")
@@ -256,6 +389,9 @@ class Workspace:
             view_rows.append(
                 {
                     "row_id": row_id,
+                    "datum_id": datum_id,
+                    "label_text": label_text,
+                    **self._icon_meta(datum_id, label_text),
                     "fields": row_fields,
                     "staged_fields": row_staged,
                     "errors": row_errors,
@@ -336,15 +472,26 @@ class Workspace:
             for node in nodes[:50]:
                 if node.layer is not None:
                     layers[node.layer] += 1
-                recent.append({"identifier": node.identifier, "label": node.label, "node_id": node.node_id})
+                recent.append(
+                    self._enrich_datum_entry(
+                        node.identifier,
+                        node.label,
+                        {"node_id": node.node_id, "identifier": node.identifier},
+                    )
+                )
 
             payload["table_archetypes"] = [
-                {
-                    "table_id": item.get("table_id"),
-                    "title": item.get("title"),
-                    "layer": item.get("layer"),
-                    "archetype_id": item.get("archetype_id"),
-                }
+                self._enrich_datum_entry(
+                    str(item.get("archetype_identifier") or ""),
+                    str(item.get("title") or item.get("table_id") or ""),
+                    {
+                        "table_id": item.get("table_id"),
+                        "title": item.get("title"),
+                        "layer": item.get("layer"),
+                        "archetype_id": item.get("archetype_id"),
+                        "archetype_identifier": item.get("archetype_identifier"),
+                    },
+                )
                 for item in self.list_tables()
                 if str(item.get("archetype_id") or "")
             ]
@@ -355,12 +502,15 @@ class Workspace:
         if token == "conspectus":
             nodes = [self._graph.get_node(node_id) for node_id in self._graph.find_by_source("conspectus")]
             payload["selection_mappings"] = [
-                {
-                    "identifier": node.identifier,
-                    "label": node.label,
-                    "references": node.raw.get("references", ""),
-                    "node_id": node.node_id,
-                }
+                self._enrich_datum_entry(
+                    node.identifier,
+                    node.label,
+                    {
+                        "identifier": node.identifier,
+                        "references": node.raw.get("references", ""),
+                        "node_id": node.node_id,
+                    },
+                )
                 for node in nodes
                 if node is not None
             ]
@@ -383,11 +533,16 @@ class Workspace:
             payload["page_size"] = page_size
             payload["total"] = len(nodes)
             payload["nodes"] = [
-                {
-                    "msn_id": node.raw.get("msn_id", node.identifier),
-                    "name": node.raw.get("name", node.label),
-                    "node_id": node.node_id,
-                }
+                self._enrich_datum_entry(
+                    node.identifier,
+                    str(node.raw.get("name") or node.label),
+                    {
+                        "msn_id": node.raw.get("msn_id", node.identifier),
+                        "name": node.raw.get("name", node.label),
+                        "node_id": node.node_id,
+                        "identifier": node.identifier,
+                    },
+                )
                 for node in nodes[start:end]
             ]
             return payload
@@ -400,13 +555,49 @@ class Workspace:
         payload["tables"] = self.list_tables()
         return payload
 
+    def _refresh_panes_for_icon_change(self) -> None:
+        self._state.left_pane = pane("navigation", self._nav_payload(self._state.focus_source, {}))
+
+        right_kind = str((self._state.right_pane or {}).get("kind") or "")
+        subject = str(self._state.focus_subject or "").strip()
+        if right_kind == "datum_summary" and subject:
+            node = self._node_for_subject(subject)
+            if node is not None:
+                datum = summarize_node(node)
+                datum.update(self._icon_meta(node.identifier, node.label))
+                self._state.right_pane = pane("datum_summary", {"datum": datum})
+        elif right_kind == "abstraction_path" and subject:
+            chain = resolve_chain(self._graph, subject)
+            for item in chain:
+                datum_id = str(item.get("identifier") or "")
+                item.update(self._icon_meta(datum_id, str(item.get("label") or datum_id)))
+            self._state.right_pane = pane("abstraction_path", {"subject": subject, "chain": chain})
+        elif right_kind == "table_instances":
+            table_id = str(((self._state.right_pane or {}).get("payload") or {}).get("table", {}).get("table_id") or "")
+            if table_id:
+                table = self._table(table_id)
+                if table is not None:
+                    self._state.right_pane = pane(
+                        "table_instances",
+                        {
+                            "table": {
+                                "table_id": table_id,
+                                "title": table.get("title"),
+                                "layer": table.get("layer"),
+                                "archetype_id": table.get("archetype_id"),
+                                "archetype_identifier": table.get("archetype_identifier"),
+                            },
+                            "instances": self.list_instances(table_id),
+                        },
+                    )
+
     def _state_response(self, errors: list[str] | None = None, warnings: list[str] | None = None) -> dict[str, Any]:
         staged_list = list((self._state.staged_edits or {}).values())
         merged_warnings = list(self._startup_warnings)
         if warnings:
             merged_warnings.extend(list(warnings))
 
-        return response_payload(
+        payload = response_payload(
             state=self._state.to_dict(),
             left_pane_vm=dict(self._state.left_pane),
             right_pane_vm=dict(self._state.right_pane),
@@ -414,6 +605,11 @@ class Workspace:
             warnings=merged_warnings,
             staged_edits=staged_list,
         )
+        payload["staged_presentation_edits"] = {
+            "datum_icons": dict(self._staged_presentation_icons)
+        }
+        payload["datum_icons_map"] = dict(self._datum_icons_map)
+        return payload
 
     def get_state_snapshot(self) -> dict[str, Any]:
         return self._state_response()
@@ -447,13 +643,18 @@ class Workspace:
                 if node is None:
                     errors.append(f"Unknown datum subject: {subject}")
                 else:
-                    self._state.right_pane = pane("datum_summary", {"datum": summarize_node(node)})
+                    datum = summarize_node(node)
+                    datum.update(self._icon_meta(node.identifier, node.label))
+                    self._state.right_pane = pane("datum_summary", {"datum": datum})
 
             elif method_token == "abstraction_path":
                 if node is None:
                     errors.append(f"Unknown datum subject: {subject}")
                 else:
                     chain = resolve_chain(self._graph, node.node_id)
+                    for item in chain:
+                        datum_id = str(item.get("identifier") or "")
+                        item.update(self._icon_meta(datum_id, str(item.get("label") or datum_id)))
                     self._state.right_pane = pane(
                         "abstraction_path",
                         {
@@ -477,6 +678,7 @@ class Workspace:
                                 "title": table.get("title"),
                                 "layer": table.get("layer"),
                                 "archetype_id": table.get("archetype_id"),
+                                "archetype_identifier": table.get("archetype_identifier"),
                             },
                             "instances": self.list_instances(table_id),
                         },
@@ -507,7 +709,19 @@ class Workspace:
 
         elif action == "man":
             method_token = str(method or "").strip().lower()
-            if method_token in {"edit_cell", "stage_edit"}:
+            if subject == "datum_icon" and method_token == "set":
+                datum_id = str(args.get("datum_id") or "").strip()
+                icon_relpath = self._normalize_icon_relpath(args.get("icon_relpath") or "")
+
+                if not self._valid_datum_id(datum_id):
+                    errors.append("datum_id must be an existing datum id or a valid id token (L-V-I).")
+                elif not self._icon_exists(icon_relpath):
+                    errors.append("icon_relpath must reference an existing .svg under assets/icons.")
+                else:
+                    self._staged_presentation_icons[datum_id] = icon_relpath
+                    self._refresh_panes_for_icon_change()
+
+            elif method_token in {"edit_cell", "stage_edit"}:
                 result = self.stage_edit(
                     row_id=str(args.get("row_id") or ""),
                     field_id=str(args.get("field_id") or ""),
@@ -623,22 +837,27 @@ class Workspace:
         if scope_token not in {"all", "table", "row"}:
             return {"ok": False, "errors": ["scope must be one of: all, table, row"], "warnings": []}
 
+        warnings: list[str] = []
+
         if scope_token == "all":
             self._staged.clear()
+            self._staged_presentation_icons.clear()
         elif scope_token == "table":
             if not table_key:
                 return {"ok": False, "errors": ["No table selected for table-scope reset."], "warnings": []}
             for key in [k for k in self._staged if k[0] == table_key]:
                 self._staged.pop(key, None)
+            warnings.append("presentation icon staging is global and was not reset by table scope")
         else:
             if not table_key or not row_key:
                 return {"ok": False, "errors": ["table_id and row_id are required for row scope reset."], "warnings": []}
             for key in [k for k in self._staged if k[0] == table_key and k[1] == row_key]:
                 self._staged.pop(key, None)
+            warnings.append("presentation icon staging is global and was not reset by row scope")
 
         self._sync_state_staging()
         self._persist_state()
-        return {"ok": True, "errors": [], "warnings": []}
+        return {"ok": True, "errors": [], "warnings": warnings}
 
     def commit(self, scope: str = "all", table_id: str | None = None, row_id: str | None = None) -> dict[str, Any]:
         scope_token = str(scope or "all").strip().lower()
@@ -648,7 +867,7 @@ class Workspace:
         if scope_token not in {"all", "table", "row"}:
             return {"ok": False, "errors": ["scope must be one of: all, table, row"], "warnings": []}
 
-        pending: dict[tuple[str, str, str], str] = {}
+        pending_data: dict[tuple[str, str, str], str] = {}
         for key, value in self._staged.items():
             key_table, key_row, _ = key
             include = False
@@ -659,14 +878,17 @@ class Workspace:
             elif scope_token == "row":
                 include = bool(table_key and row_key and key_table == table_key and key_row == row_key)
             if include:
-                pending[key] = value
+                pending_data[key] = value
 
-        if not pending:
+        pending_icons = dict(self._staged_presentation_icons)
+
+        if not pending_data and not pending_icons:
             return {"ok": True, "errors": [], "warnings": ["no staged edits"]}
 
         validation_errors: list[str] = []
         validation_warnings: list[str] = []
-        for (table_token, row_token, field_token), display_value in pending.items():
+
+        for (table_token, row_token, field_token), display_value in pending_data.items():
             lens = get_lens(field_token, lens_context=self._state.lens_context, config=self.config)
             validation = lens.validate(display_value)
             if not validation.ok:
@@ -674,88 +896,117 @@ class Workspace:
                     validation_errors.append(f"{table_token}/{row_token}/{field_token}: {err}")
             validation_warnings.extend(list(validation.warnings))
 
+        for datum_id, icon_rel in pending_icons.items():
+            if not self._valid_datum_id(datum_id):
+                validation_errors.append(f"Invalid datum_id for icon assignment: {datum_id}")
+            if not self._icon_exists(icon_rel):
+                validation_errors.append(f"Invalid icon_relpath for datum {datum_id}: {icon_rel}")
+
         if validation_errors:
             return {"ok": False, "errors": validation_errors, "warnings": validation_warnings}
 
-        by_table: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
-        for key in pending.keys():
-            by_table[key[0]].append(key)
+        errors: list[str] = []
+        warnings = list(validation_warnings)
 
-        persist_errors: list[str] = []
-        known_storage_tables = {str(item).strip().lower() for item in self.storage.known_tables()}
-        for target_table, edit_keys in by_table.items():
-            table = self._table(target_table)
-            if table is None:
-                persist_errors.append(f"Unknown table during commit: {target_table}")
-                continue
+        # Persist core table edits.
+        if pending_data:
+            by_table: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+            for key in pending_data.keys():
+                by_table[key[0]].append(key)
 
-            normalized_target = str(target_table or "").strip().lower()
-            if normalized_target in known_storage_tables:
-                rows = [dict(row) for row in list(table.get("rows") or [])]
-                by_row = {str(row.get("row_id") or "").strip(): row for row in rows}
+            known_storage_tables = {str(item).strip().lower() for item in self.storage.known_tables()}
+            for target_table, edit_keys in by_table.items():
+                table = self._table(target_table)
+                if table is None:
+                    errors.append(f"Unknown table during commit: {target_table}")
+                    continue
 
-                for _, target_row, target_field in edit_keys:
-                    row_payload = by_row.get(target_row)
-                    if row_payload is None:
-                        persist_errors.append(f"Unknown row during commit: {target_table}/{target_row}")
+                normalized_target = str(target_table or "").strip().lower()
+                if normalized_target in known_storage_tables:
+                    rows = [dict(row) for row in list(table.get("rows") or [])]
+                    by_row = {str(row.get("row_id") or "").strip(): row for row in rows}
+
+                    for _, target_row, target_field in edit_keys:
+                        row_payload = by_row.get(target_row)
+                        if row_payload is None:
+                            errors.append(f"Unknown row during commit: {target_table}/{target_row}")
+                            continue
+                        lens = get_lens(target_field, lens_context=self._state.lens_context, config=self.config)
+                        row_payload[target_field] = lens.encode(self._staged[(target_table, target_row, target_field)])
+
+                    result = self.storage.persist_rows(normalized_target, rows)
+                    if not bool(result.get("ok")):
+                        errors.extend(list(result.get("errors") or []))
+                    continue
+
+                # Inferred/archetype table ids are persisted back to their source payloads.
+                source_rows: dict[str, list[dict[str, str]]] = {}
+                source_row_lookup: dict[str, dict[str, dict[str, str]]] = {}
+                row_source: dict[str, str] = {}
+
+                for row in list(table.get("rows") or []):
+                    row_id_token = str(row.get("row_id") or "").strip()
+                    source_token = str(row.get("_source") or "").strip().lower()
+                    if not row_id_token or not source_token:
                         continue
+                    row_source[row_id_token] = source_token
+                    if source_token not in source_rows:
+                        source_payload_rows = [dict(item) for item in list(self._rows_by_table.get(source_token) or [])]
+                        source_rows[source_token] = source_payload_rows
+                        source_row_lookup[source_token] = {
+                            str(item.get("row_id") or "").strip(): item for item in source_payload_rows
+                        }
+
+                touched_sources: set[str] = set()
+                for _, target_row, target_field in edit_keys:
+                    source_token = row_source.get(target_row)
+                    if not source_token:
+                        errors.append(f"Unable to resolve source table for row: {target_table}/{target_row}")
+                        continue
+                    if source_token not in known_storage_tables:
+                        errors.append(f"Unknown source table during commit: {source_token}")
+                        continue
+
+                    source_row = source_row_lookup.get(source_token, {}).get(target_row)
+                    if source_row is None:
+                        errors.append(f"Unknown source row during commit: {source_token}/{target_row}")
+                        continue
+
                     lens = get_lens(target_field, lens_context=self._state.lens_context, config=self.config)
-                    row_payload[target_field] = lens.encode(self._staged[(target_table, target_row, target_field)])
+                    source_row[target_field] = lens.encode(self._staged[(target_table, target_row, target_field)])
+                    touched_sources.add(source_token)
 
-                result = self.storage.persist_rows(normalized_target, rows)
-                if not bool(result.get("ok")):
-                    persist_errors.extend(list(result.get("errors") or []))
-                continue
+                for source_token in sorted(touched_sources):
+                    result = self.storage.persist_rows(source_token, source_rows.get(source_token, []))
+                    if not bool(result.get("ok")):
+                        errors.extend(list(result.get("errors") or []))
 
-            # Inferred/archetype table ids are persisted back to their source payloads.
-            source_rows: dict[str, list[dict[str, str]]] = {}
-            source_row_lookup: dict[str, dict[str, dict[str, str]]] = {}
-            row_source: dict[str, str] = {}
+        # Persist sidecar icon presentation edits.
+        if pending_icons:
+            merged_icons = dict(self._datum_icons_map)
+            for datum_id, icon_rel in pending_icons.items():
+                rel = self._normalize_icon_relpath(icon_rel)
+                if rel:
+                    merged_icons[datum_id] = rel
+                else:
+                    merged_icons.pop(datum_id, None)
 
-            for row in list(table.get("rows") or []):
-                row_id_token = str(row.get("row_id") or "").strip()
-                source_token = str(row.get("_source") or "").strip().lower()
-                if not row_id_token or not source_token:
-                    continue
-                row_source[row_id_token] = source_token
-                if source_token not in source_rows:
-                    source_payload_rows = [dict(item) for item in list(self._rows_by_table.get(source_token) or [])]
-                    source_rows[source_token] = source_payload_rows
-                    source_row_lookup[source_token] = {
-                        str(item.get("row_id") or "").strip(): item for item in source_payload_rows
-                    }
+            icon_result = self.storage.persist_datum_icons_map(merged_icons)
+            if not bool(icon_result.get("ok")):
+                errors.extend(list(icon_result.get("errors") or []))
+            else:
+                self._datum_icons_map = merged_icons
 
-            touched_sources: set[str] = set()
-            for _, target_row, target_field in edit_keys:
-                source_token = row_source.get(target_row)
-                if not source_token:
-                    persist_errors.append(f"Unable to resolve source table for row: {target_table}/{target_row}")
-                    continue
-                if source_token not in known_storage_tables:
-                    persist_errors.append(f"Unknown source table during commit: {source_token}")
-                    continue
+        if errors:
+            return {"ok": False, "errors": errors, "warnings": warnings}
 
-                source_row = source_row_lookup.get(source_token, {}).get(target_row)
-                if source_row is None:
-                    persist_errors.append(f"Unknown source row during commit: {source_token}/{target_row}")
-                    continue
-
-                lens = get_lens(target_field, lens_context=self._state.lens_context, config=self.config)
-                source_row[target_field] = lens.encode(self._staged[(target_table, target_row, target_field)])
-                touched_sources.add(source_token)
-
-            for source_token in sorted(touched_sources):
-                result = self.storage.persist_rows(source_token, source_rows.get(source_token, []))
-                if not bool(result.get("ok")):
-                    persist_errors.extend(list(result.get("errors") or []))
-
-        if persist_errors:
-            return {"ok": False, "errors": persist_errors, "warnings": validation_warnings}
-
-        for key in pending.keys():
+        for key in pending_data.keys():
             self._staged.pop(key, None)
+        for key in pending_icons.keys():
+            self._staged_presentation_icons.pop(key, None)
 
         self._reload()
         self._sync_state_staging()
         self._persist_state()
-        return {"ok": True, "errors": [], "warnings": validation_warnings}
+        self._refresh_panes_for_icon_change()
+        return {"ok": True, "errors": [], "warnings": warnings}
